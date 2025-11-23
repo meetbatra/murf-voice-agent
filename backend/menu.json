@@ -1,0 +1,107 @@
+{
+  "coffee": {
+    "espresso": {
+      "name": "Espresso",
+      "description": "Rich and intense shot of coffee",
+      "sizes": ["single", "double"],
+      "price": {"single": 2.50, "double": 3.50}
+    },
+    "americano": {
+      "name": "Americano",
+      "description": "Espresso with hot water",
+      "sizes": ["small", "medium", "large"],
+      "price": {"small": 3.00, "medium": 3.50, "large": 4.00}
+    },
+    "latte": {
+      "name": "Latte",
+      "description": "Espresso with steamed milk",
+      "sizes": ["small", "medium", "large"],
+      "price": {"small": 3.75, "medium": 4.25, "large": 4.75}
+    },
+    "cappuccino": {
+      "name": "Cappuccino",
+      "description": "Espresso with equal parts steamed milk and foam",
+      "sizes": ["small", "medium", "large"],
+      "price": {"small": 3.75, "medium": 4.25, "large": 4.75}
+    },
+    "mocha": {
+      "name": "Mocha",
+      "description": "Latte with chocolate",
+      "sizes": ["small", "medium", "large"],
+      "price": {"small": 4.25, "medium": 4.75, "large": 5.25}
+    },
+    "macchiato": {
+      "name": "Macchiato",
+      "description": "Espresso with a dollop of foam",
+      "sizes": ["single", "double"],
+      "price": {"single": 2.75, "double": 3.75}
+    },
+    "flat-white": {
+      "name": "Flat White",
+      "description": "Espresso with microfoam",
+      "sizes": ["small", "medium"],
+      "price": {"small": 3.75, "medium": 4.25}
+    },
+    "cold-brew": {
+      "name": "Cold Brew",
+      "description": "Smooth, cold-steeped coffee",
+      "sizes": ["small", "medium", "large"],
+      "price": {"small": 3.50, "medium": 4.00, "large": 4.50}
+    },
+    "iced-coffee": {
+      "name": "Iced Coffee",
+      "description": "Chilled brewed coffee over ice",
+      "sizes": ["small", "medium", "large"],
+      "price": {"small": 3.00, "medium": 3.50, "large": 4.00}
+    },
+    "iced-latte": {
+      "name": "Iced Latte",
+      "description": "Espresso with cold milk over ice",
+      "sizes": ["small", "medium", "large"],
+      "price": {"small": 3.75, "medium": 4.25, "large": 4.75}
+    }
+  },
+  "milk_options": [
+    "whole milk",
+    "2% milk",
+    "skim milk",
+    "oat milk",
+    "almond milk",
+    "soy milk",
+    "coconut milk"
+  ],
+  "extras": {
+    "extra-shot": {
+      "name": "Extra Shot",
+      "price": 0.75
+    },
+    "vanilla": {
+      "name": "Vanilla Syrup",
+      "price": 0.50
+    },
+    "caramel": {
+      "name": "Caramel Syrup",
+      "price": 0.50
+    },
+    "hazelnut": {
+      "name": "Hazelnut Syrup",
+      "price": 0.50
+    },
+    "pumpkin-spice": {
+      "name": "Pumpkin Spice",
+      "price": 0.75
+    },
+    "whipped-cream": {
+      "name": "Whipped Cream",
+      "price": 0.50
+    },
+    "chocolate-drizzle": {
+      "name": "Chocolate Drizzle",
+      "price": 0.50
+    },
+    "cinnamon": {
+      "name": "Cinnamon",
+      "price": 0.00
+    }
+  }
+}

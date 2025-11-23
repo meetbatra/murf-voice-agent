@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import type { AppConfig } from '@/app-config';
 import { ChatTranscript } from '@/components/app/chat-transcript';
 import { PreConnectMessage } from '@/components/app/preconnect-message';
 import { TileLayout } from '@/components/app/tile-layout';
+import { Receipt } from '@/components/app/receipt';
 import {
   AgentControlBar,
   type ControlBarControls,
@@ -71,7 +72,32 @@ export const SessionView = ({
 
   const messages = useChatMessages();
   const [chatOpen, setChatOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const hasCheckedForReceipt = useRef(false);
+
+  // Listen for order completion in messages
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && !hasCheckedForReceipt.current) {
+      const messageText = lastMessage.message.toLowerCase();
+      // Check if message contains grand total announcement
+      if (messageText.includes('grand total') && messageText.includes('$')) {
+        hasCheckedForReceipt.current = true;
+        // Fetch the latest order from backend
+        setTimeout(() => {
+          fetch('/api/latest-order')
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.orders) {
+                setReceiptData(data);
+              }
+            })
+            .catch(err => console.error('Failed to fetch receipt:', err));
+        }, 500); // Small delay to ensure file is written
+      }
+    }
+  }, [messages]);
 
   const controls: ControlBarControls = {
     leave: true,
@@ -91,14 +117,27 @@ export const SessionView = ({
   }, [messages]);
 
   return (
+    <>
     <section className="bg-background relative z-10 h-full w-full overflow-hidden" {...props}>
-      {/* Chat Transcript */}
-      <div
-        className={cn(
-          'fixed inset-0 grid grid-cols-1 grid-rows-1',
-          !chatOpen && 'pointer-events-none'
-        )}
+      {/* Main Content Wrapper */}
+      <motion.div
+        className="h-full w-full"
+        animate={{
+          marginRight: receiptData ? '400px' : '0px',
+        }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
       >
+        {/* Chat Transcript */}
+        <div
+          className={cn(
+            'fixed inset-0 grid grid-cols-1 grid-rows-1',
+            !chatOpen && 'pointer-events-none'
+          )}
+          style={{
+            right: receiptData ? '400px' : '0',
+            transition: 'right 0.3s ease',
+          }}
+        >
         <Fade top className="absolute inset-x-4 top-0 h-40" />
         <ScrollArea ref={scrollAreaRef} className="px-4 pt-40 pb-[150px] md:px-6 md:pb-[180px]">
           <ChatTranscript
@@ -115,7 +154,8 @@ export const SessionView = ({
       {/* Bottom */}
       <MotionBottom
         {...BOTTOM_VIEW_MOTION_PROPS}
-        className="fixed inset-x-3 bottom-0 z-50 md:inset-x-12"
+        className="fixed inset-x-3 bottom-0 md:inset-x-12"
+        style={{ zIndex: 50 }}
       >
         {appConfig.isPreConnectBufferEnabled && (
           <PreConnectMessage messages={messages} className="pb-4" />
@@ -125,6 +165,18 @@ export const SessionView = ({
           <AgentControlBar controls={controls} onChatOpenChange={setChatOpen} />
         </div>
       </MotionBottom>
+      </motion.div>
     </section>
+
+      {/* Receipt Side Panel */}
+      <AnimatePresence>
+        {receiptData && (
+          <Receipt 
+            data={receiptData} 
+            onClose={() => setReceiptData(null)} 
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 };
