@@ -20,7 +20,7 @@ export default async function Layout({ children }: LayoutProps) {
         </div>
         
         <span className="text-muted-foreground font-mono text-xs font-bold tracking-wider uppercase">
-          AI Barista Challenge
+          AI Wellness Challenge
         </span>
       </header>
 

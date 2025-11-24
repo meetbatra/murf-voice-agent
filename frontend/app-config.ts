@@ -20,9 +20,9 @@ export interface AppConfig {
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'MoonBucks',
-  pageTitle: 'MoonBucks | AI Voice Barista',
-  pageDescription: 'Order your favorite coffee with our AI-powered voice barista',
+  companyName: 'WellnessCompanion',
+  pageTitle: 'Wellness Companion | AI Voice Check-In',
+  pageDescription: 'Your daily health and wellness voice companion',
 
   supportsChatInput: true,
   supportsVideoInput: false,
@@ -30,10 +30,10 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   isPreConnectBufferEnabled: true,
 
   logo: '/lk-logo.svg',
-  accent: '#00704A',
+  accent: '#4A90E2',
   logoDark: '/lk-logo-dark.svg',
-  accentDark: '#1B8758',
-  startButtonText: '☕ Start Order',
+  accentDark: '#6BA3E8',
+  startButtonText: '✨ Start Check-In',
 
   // for LiveKit Cloud Sandbox
   sandboxId: undefined,

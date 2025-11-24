@@ -6,7 +6,7 @@ import type { AppConfig } from '@/app-config';
 import { ChatTranscript } from '@/components/app/chat-transcript';
 import { PreConnectMessage } from '@/components/app/preconnect-message';
 import { TileLayout } from '@/components/app/tile-layout';
-import { WellnessSummary } from '@/components/app/wellness-summary';
+import { Receipt } from '@/components/app/receipt';
 import {
   AgentControlBar,
   type ControlBarControls,
@@ -16,6 +16,8 @@ import { useConnectionTimeout } from '@/hooks/useConnectionTimout';
 import { useDebugMode } from '@/hooks/useDebug';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../livekit/scroll-area/scroll-area';
+
+const MotionBottom = motion.create('div');
 
 const IN_DEVELOPMENT = process.env.NODE_ENV !== 'production';
 const BOTTOM_VIEW_MOTION_PROPS = {
@@ -29,13 +31,13 @@ const BOTTOM_VIEW_MOTION_PROPS = {
       translateY: '100%',
     },
   },
-  initial: 'hidden' as const,
-  animate: 'visible' as const,
-  exit: 'hidden' as const,
+  initial: 'hidden',
+  animate: 'visible',
+  exit: 'hidden',
   transition: {
     duration: 0.3,
     delay: 0.5,
-    ease: [0.4, 0.0, 0.2, 1],
+    ease: 'easeOut',
   },
 };
 
@@ -70,28 +72,28 @@ export const SessionView = ({
 
   const messages = useChatMessages();
   const [chatOpen, setChatOpen] = useState(false);
-  const [wellnessData, setwellnessData] = useState<any>(null);
+  const [receiptData, setReceiptData] = useState<any>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const hasCheckedForwellness = useRef(false);
+  const hasCheckedForReceipt = useRef(false);
 
-  // Listen for check-in completion in messages
+  // Listen for order completion in messages
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
-    if (lastMessage && !hasCheckedForwellness.current) {
+    if (lastMessage && !hasCheckedForReceipt.current) {
       const messageText = lastMessage.message.toLowerCase();
-      // Check if message contains check-in completion
-      if (messageText.includes('check-in') && messageText.includes('saved')) {
-        hasCheckedForwellness.current = true;
-        // Fetch the latest wellness log from backend
+      // Check if message contains grand total announcement
+      if (messageText.includes('grand total') && messageText.includes('$')) {
+        hasCheckedForReceipt.current = true;
+        // Fetch the latest order from backend
         setTimeout(() => {
-          fetch('/api/wellness-log')
+          fetch('/api/latest-order')
             .then(res => res.json())
             .then(data => {
-              if (data && data.sessions) {
-                setwellnessData(data);
+              if (data && data.orders) {
+                setReceiptData(data);
               }
             })
-            .catch(err => console.error('Failed to fetch wellness:', err));
+            .catch(err => console.error('Failed to fetch receipt:', err));
         }, 500); // Small delay to ensure file is written
       }
     }
@@ -121,7 +123,7 @@ export const SessionView = ({
       <motion.div
         className="h-full w-full"
         animate={{
-          marginRight: wellnessData ? '400px' : '0px',
+          marginRight: receiptData ? '400px' : '0px',
         }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
       >
@@ -132,7 +134,7 @@ export const SessionView = ({
             !chatOpen && 'pointer-events-none'
           )}
           style={{
-            right: wellnessData ? '400px' : '0',
+            right: receiptData ? '400px' : '0',
             transition: 'right 0.3s ease',
           }}
         >
@@ -150,24 +152,8 @@ export const SessionView = ({
       <TileLayout chatOpen={chatOpen} />
 
       {/* Bottom */}
-      <motion.div
-        variants={{
-          visible: {
-            opacity: 1,
-            translateY: '0%',
-          },
-          hidden: {
-            opacity: 0,
-            translateY: '100%',
-          },
-        }}
-        initial="hidden"
-        animate="visible"
-        exit="hidden"
-        transition={{
-          duration: 0.3,
-          delay: 0.5,
-        }}
+      <MotionBottom
+        {...BOTTOM_VIEW_MOTION_PROPS}
         className="fixed inset-x-3 bottom-0 md:inset-x-12"
         style={{ zIndex: 50 }}
       >
@@ -178,16 +164,16 @@ export const SessionView = ({
           <Fade bottom className="absolute inset-x-0 top-0 h-4 -translate-y-full" />
           <AgentControlBar controls={controls} onChatOpenChange={setChatOpen} />
         </div>
-      </motion.div>
+      </MotionBottom>
       </motion.div>
     </section>
 
-      {/* wellness Side Panel */}
+      {/* Receipt Side Panel */}
       <AnimatePresence>
-        {wellnessData && (
-          <WellnessSummary 
-            data={wellnessData} 
-            onClose={() => setwellnessData(null)} 
+        {receiptData && (
+          <Receipt 
+            data={receiptData} 
+            onClose={() => setReceiptData(null)} 
           />
         )}
       </AnimatePresence>
