@@ -1,0 +1,90 @@
+[
+  {
+    "id": "variables",
+    "title": "Variables",
+    "summary": "Variables are containers that store data values. They have a name and hold information that can change during program execution. Different programming languages handle variables differently - some require explicit type declarations while others infer types automatically.",
+    "sample_questions": [
+      "What's the difference between let, const, and var in JavaScript?",
+      "How does variable scope work in Python?",
+      "What happens when you try to use a variable before declaring it?",
+      "Can you explain the difference between mutable and immutable variables?"
+    ]
+  },
+  {
+    "id": "loops",
+    "title": "Loops",
+    "summary": "Loops allow you to repeat a block of code multiple times. The main types are for loops (iterate a specific number of times or over a collection) and while loops (continue until a condition becomes false). Loop control statements like break and continue give you fine control over execution.",
+    "sample_questions": [
+      "When would you use a for loop versus a while loop?",
+      "What's the difference between break and continue statements?",
+      "How do you iterate over a list in reverse order?",
+      "What is an infinite loop and how can you prevent it?"
+    ]
+  },
+  {
+    "id": "functions",
+    "title": "Functions",
+    "summary": "Functions are reusable blocks of code that perform specific tasks. They can accept input parameters, process data, and return output values. Functions help organize code, reduce repetition, and make programs easier to understand and maintain.",
+    "sample_questions": [
+      "What's the difference between parameters and arguments?",
+      "How do default parameters work in functions?",
+      "What does it mean for a function to return a value?",
+      "Can you explain what a callback function is?"
+    ]
+  },
+  {
+    "id": "conditionals",
+    "title": "Conditionals",
+    "summary": "Conditionals allow programs to make decisions based on conditions. The if statement executes code when a condition is true, else handles the false case, and elif/else if chains multiple conditions. Boolean operators (AND, OR, NOT) can combine multiple conditions.",
+    "sample_questions": [
+      "What's the difference between == and === in JavaScript?",
+      "How do you check if a variable is null or undefined?",
+      "What is short-circuit evaluation in boolean expressions?",
+      "How can you simplify multiple if-else statements?"
+    ]
+  },
+  {
+    "id": "arrays",
+    "title": "Arrays and Lists",
+    "summary": "Arrays and lists are data structures that store multiple values in a single variable. They allow indexed access to elements, can be iterated over, and support various operations like adding, removing, and searching for items. Different languages implement them differently.",
+    "sample_questions": [
+      "What's the difference between push and pop methods?",
+      "How do you find if an element exists in an array?",
+      "What does it mean that arrays are zero-indexed?",
+      "How would you remove duplicate values from an array?"
+    ]
+  },
+  {
+    "id": "objects",
+    "title": "Objects and Classes",
+    "summary": "Objects are instances of classes that bundle data (properties) and behavior (methods) together. Classes serve as blueprints for creating objects. Object-oriented programming uses concepts like inheritance, encapsulation, and polymorphism to organize code.",
+    "sample_questions": [
+      "What's the difference between a class and an object?",
+      "How does inheritance work in object-oriented programming?",
+      "What is the purpose of a constructor?",
+      "Can you explain what encapsulation means?"
+    ]
+  },
+  {
+    "id": "async",
+    "title": "Asynchronous Programming",
+    "summary": "Asynchronous programming allows code to handle multiple operations without blocking. Concepts include promises, async/await syntax, callbacks, and event loops. This is essential for I/O operations, network requests, and creating responsive applications.",
+    "sample_questions": [
+      "What's the difference between synchronous and asynchronous code?",
+      "How do promises work in JavaScript?",
+      "What does the await keyword do?",
+      "Why is async programming important for web applications?"
+    ]
+  },
+  {
+    "id": "errors",
+    "title": "Error Handling",
+    "summary": "Error handling manages unexpected situations that occur during program execution. Try-catch blocks catch exceptions, finally blocks run cleanup code, and throw statements raise errors. Proper error handling makes programs robust and prevents crashes.",
+    "sample_questions": [
+      "What's the difference between try, catch, and finally blocks?",
+      "When should you throw a custom error?",
+      "How do you handle errors in asynchronous code?",
+      "What's the difference between an error and an exception?"
+    ]
+  }
+]

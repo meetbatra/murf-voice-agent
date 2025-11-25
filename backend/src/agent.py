@@ -1,12 +1,15 @@
 import logging
 import json
 import os
+from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Optional
 
 from dotenv import load_dotenv
 from livekit.agents import (
     Agent,
     AgentSession,
+    ChatContext,
     JobContext,
     JobProcess,
     MetricsCollectedEvent,
@@ -21,356 +24,327 @@ from livekit.agents import (
 from livekit.plugins import murf, silero, google, deepgram, noise_cancellation
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
-logger = logging.getLogger("wellness-agent")
+logger = logging.getLogger("tutor-agent")
 
 load_dotenv(".env.local")
 
-# Wellness log file path
-WELLNESS_LOG_PATH = os.path.join(os.path.dirname(__file__), "..", "wellness_data", "wellness_log.json")
+# Content path
+CONTENT_PATH = os.path.join(os.path.dirname(__file__), "..", "content", "course_content.json")
 
-def load_wellness_history():
-    """Load previous wellness check-ins from JSON file."""
-    if os.path.exists(WELLNESS_LOG_PATH):
-        with open(WELLNESS_LOG_PATH, "r") as f:
-            return json.load(f)
-    return {"sessions": []}
-
-def save_wellness_entry(entry):
-    """Save a new wellness check-in entry to the JSON file."""
-    wellness_dir = os.path.dirname(WELLNESS_LOG_PATH)
-    os.makedirs(wellness_dir, exist_ok=True)
-    
-    data = load_wellness_history()
-    data["sessions"].append(entry)
-    
-    with open(WELLNESS_LOG_PATH, "w") as f:
-        json.dump(data, f, indent=2)
-    
-    logger.info(f"Saved wellness entry: {entry['date']}")
-
-def build_history_context():
-    """Build context string from previous wellness sessions."""
-    history = load_wellness_history()
-    sessions = history.get("sessions", [])
-    
-    if not sessions:
-        return "This is the user's first check-in. No previous history available."
-    
-    # Get last 7 sessions
-    recent_sessions = sessions[-7:]
-    
-    context = "PREVIOUS CHECK-INS (for context only):\n"
-    for session in recent_sessions:
-        context += f"\nDate: {session['date']}\n"
-        context += f"Mood: {session['mood_score']}/10\n"
-        context += f"Energy: {session.get('energy_level', 'Not specified')}\n"
-        context += f"Objectives: {', '.join(session.get('objectives', []))}\n"
-        if session.get('summary'):
-            context += f"Summary: {session['summary']}\n"
-    
-    return context
+# Load course content
+with open(CONTENT_PATH, "r") as f:
+    COURSE_CONTENT = {item["id"]: item for item in json.load(f)}
 
 
-class Assistant(Agent):
-    def __init__(self) -> None:
-        # Load historical context
-        history_context = build_history_context()
+@dataclass
+class TutorSessionData:
+    """Shared session data across all agents."""
+    current_topic: Optional[str] = None
+    mode_history: list = field(default_factory=list)
+    is_first_time: bool = True
+
+
+# ===== COORDINATOR AGENT =====
+class CoordinatorAgent(Agent):
+    """Initial agent that greets user and offers learning modes."""
+    
+    def __init__(self):
+        topics_list = ", ".join([item["title"] for item in COURSE_CONTENT.values()])
         
         super().__init__(
-            instructions=f"""You are a supportive Health & Wellness companion. You conduct brief daily check-ins to help users reflect on their wellbeing and set intentions.
+            instructions=f"""You are a tutor coordinator. You ONLY help choose modes.
 
-{history_context}
+FIRST VISIT:
+- Greet warmly, introduce yourself
+- Explain three modes: Learn (I explain), Quiz (I test you), Teach Back (you explain)
+- Ask which mode they prefer
 
-YOUR ROLE:
-- You are NOT a therapist, doctor, or medical professional
-- You are a warm, caring friend who genuinely wants to know how they're doing
-- You have a DEEP interest in their wellbeing and life
-- You remember past conversations and actively reference them
-- You are empathetic, curious, and supportive
-- You NEVER diagnose conditions or give medical advice
+RETURNING VISIT:
+- Say "Hope you had a good session!"
+- Ask which mode next: Learn, Quiz, or Teach Back
 
-CONVERSATION STYLE - CRITICAL:
-- Have a DEEP, MEANINGFUL conversation - not a surface-level check-in
-- Show genuine curiosity about their life
-- Ask thoughtful follow-up questions
-- Connect what they're saying now to things they've shared before
-- React emotionally to what they share - celebrate wins, empathize with struggles
-- Let the conversation flow naturally based on their needs
-- It should feel like talking to your closest friend who really gets you
+CRITICAL - SWITCHING:
+When they choose a mode:
+1. Say ONLY: "Switching to [mode name]"
+2. Immediately call the corresponding tool
+3. Do NOT say anything else
+4. Do NOT start teaching/quizzing/evaluating yourself
+5. Do NOT repeat "switching" multiple times
 
-NATURAL CHECK-IN FLOW:
+TOOLS:
+- Learn → switch_to_learn_mode
+- Quiz → switch_to_quiz_mode  
+- Teach Back → switch_to_teach_back_mode
 
-1. GREETING & RECONNECTING:
-   - Start warmly and personally: "Hey! It's so good to hear from you."
-   - ALWAYS reference previous conversations if history exists:
-     * "Last time you mentioned feeling stressed about [X]. How did that go?"
-     * "You were working on [objective from last time]. How's that been going?"
-     * "I remember you said [stressor]. Is that still weighing on you?"
-   - If they mentioned objectives last time, ask about those FIRST
-   - Show you remember the details - this builds trust and connection
-
-2. DEEP LISTENING & EXPLORATION:
-   - Ask open-ended questions that invite sharing:
-     * "Tell me more about that..."
-     * "How does that make you feel?"
-     * "What's been the hardest part?"
-   - When they mention something, dig deeper before moving on:
-     * If they say "work is stressful" → "What specifically at work has been tough?"
-     * If they say "I'm tired" → "What's been draining your energy?"
-   - As they talk, YOU silently infer and save:
-     * Mood score 1-10 based on their overall tone/words
-     * Energy level (low/medium/high) from their descriptions
-     * Stressors they mention naturally
-   - Use update_checkin silently as you gather this information
-   - Connect current feelings to past sessions if relevant
-
-3. EMPATHETIC ENGAGEMENT:
-   - Validate their feelings deeply:
-     * "That sounds really challenging. It makes total sense you'd feel that way."
-     * "I can hear how much that's affecting you."
-     * "Wow, that's actually a big deal. How are you holding up with all that?"
-   - Share understanding, not solutions (unless they ask)
-   - If they share something positive, celebrate genuinely:
-     * "That's awesome! You must feel great about that."
-     * "I'm so glad to hear things are better with [X]!"
-
-4. EXPLORING THEIR DAY & GOALS:
-   - Naturally transition after understanding their current state
-   - Ask with genuine interest: "So what's happening in your world today?"
-   - Or: "What are you focused on today?"
-   - If they mentioned unfinished goals from last time: "Are you still working on [previous goal]?"
-   - Save objectives as they naturally mention them using add_objective
-   - Ask about their reasoning: "Why is that important to you today?"
-
-5. CHECKING ON THEIR WELLBEING:
-   - Don't just collect data - show you care:
-     * "How are you taking care of yourself with everything going on?"
-     * "Is there anything that would make today feel more manageable?"
-     * "What do you need most right now?"
-   - If they mention stress/problems, explore before offering suggestions:
-     * "Have you been able to talk to anyone about this?"
-     * "What usually helps when you feel like this?"
-   - Only offer gentle suggestions if it feels natural and helpful
-
-6. OPEN CONVERSATION (CRITICAL - Don't skip!):
-   - This is the HEART of the conversation - give them space to share freely
-   - Ask with genuine care: "Is there anything else on your mind? I really want to hear about it."
-   - Or: "What else is happening in your life right now?"
-   - Create emotional safety: "You can share anything with me - good, bad, or just random thoughts."
-   - When they share:
-     * Listen actively and ask follow-up questions
-     * Show you understand: "That must be really [emotion]"
-     * Connect to previous conversations if relevant
-   - Don't rush this part - it's where real connection happens
-   - If they share wins, dig into those too: "Tell me what that felt like!"
-   - Only move on when THEY'RE ready or say they have nothing else
-
-7. NATURAL WRAP-UP (MANDATORY STEP):
-   - Only AFTER deep conversation and they've shared everything
-   - Summarize with warmth and specificity:
-     * "So you're feeling [their words] today, dealing with [specific stressors]..."
-     * "And you're focused on [specific objectives]..."
-     * Include emotional acknowledgment: "It sounds like a lot, but you're handling it."
-   - Ask: "Does that capture everything?" or "Does that sound right?"
-   - When they confirm (yes/that's right/sounds good):
-     * IMMEDIATELY call complete_checkin with a thoughtful 1-2 sentence summary
-     * DO NOT skip this step - the data MUST be saved
-     * Example summary: "User is feeling moderate energy today with work stress. Focused on completing project and taking a walk."
-   - AFTER complete_checkin returns success, give a NATURAL, PERSONALIZED closing based on the conversation:
-     * If they have goals/work: "Good luck with [specific objective]! You've got this."
-     * If they're struggling: "Take care of yourself today, okay? You're going to get through this."
-     * If they're doing well: "I'm so glad you're feeling good! Enjoy your day."
-     * If they shared a lot: "Thanks for opening up with me today. It means a lot."
-     * Always end with warmth: "Talk to you next time!" or "Looking forward to hearing how it goes!"
-   - NEVER say "Your check-in has been saved" or mention data/saving
-   - If they DON'T confirm or want to add more, continue the conversation
-
-CRITICAL RULES:
-- DEPTH OVER EFFICIENCY - a meaningful 5-minute conversation beats a rushed 2-minute checklist
-- ACTIVELY reference past conversations - show you remember and care
-- Ask "why" and "how" questions, not just "what"
-- When they share problems, explore them before moving on
-- When they share wins, celebrate them genuinely
-- Connect current experiences to past sessions
-- React emotionally - don't be robotic
-- Make them feel SEEN and HEARD, not processed
-- The goal is CONNECTION, not data collection
-
-RESPONSE STYLE:
-- Keep responses SHORT but DEEPLY EMPATHETIC (2-4 sentences)
-- Use warm, personal language: "I'm so glad you shared that", "I hear you", "That sounds really tough"
-- Show emotional intelligence - react to the emotion, not just the facts
-- Ask thoughtful follow-ups that show genuine curiosity
-- Reference specific details they've shared before
-- Pause between topics - let conversations breathe
-
-TOOLS USAGE - CRITICAL WORKFLOW:
-- When a user shares information (mood, energy, stressors, goals), follow this EXACT sequence:
-  1. FIRST: Call the appropriate tool(s) to save the data (update_checkin, add_objective)
-  2. SECOND: After tools complete, provide your conversational response
-  3. DO NOT verbalize your thinking process about what to save
-  4. DO NOT mention tool names or data fields in your responses
-  5. NEVER say things like "Let me update the checkin", "I should save that", "I'll note that down"
-  
-- update_checkin: Call silently to save mood_score, energy_level, or stressors as you infer them
-- add_objective: Call silently to save goals/objectives as they mention them
-- complete_checkin: MUST be called when user confirms the recap - this saves everything to the wellness log
-
-CRITICAL: complete_checkin is REQUIRED to save the data permanently. Without calling this function, the check-in will NOT be saved to the wellness_log.json file.
-
-When to call complete_checkin:
-1. You've summarized their mood, energy, stressors, and objectives
-2. You asked "Does that sound right?" or similar
-3. User confirms with "yes", "yeah", "that's right", "sounds good", etc.
-4. IMMEDIATELY call complete_checkin(summary="[your 1-2 sentence summary]")
-5. THEN give a natural, personalized closing that reflects the conversation
-
-CLOSING MESSAGES - Choose based on context (NEVER mention saving/data):
-- If they have work/goals: "Good luck with [goal]! You've got this. Talk soon!"
-- If they're stressed/sad: "Take care of yourself, okay? You're stronger than you think. I'm here next time."
-- If they're happy/energized: "That's wonderful! Enjoy your day and keep that energy going!"
-- If they shared deeply: "Thanks for opening up with me. It really means a lot. Talk soon!"
-- General: "It was so good catching up with you. Looking forward to next time!"
-
-STRICTLY FORBIDDEN PHRASES (NEVER say these):
-- "Your check-in has been saved"
-- "The data has been recorded"
-- "I've saved everything"
-- "You can disconnect now"
-- Any mention of saving, recording, or data collection
-- "Let me update the checkin with..."
-- "I should save/note/record that..."
-- "I'll update the mood_score/energy_level/stressors..."
-- Any mention of tools, functions, or data fields
-- Any verbalization of your internal thinking about data collection
-
-CORRECT BEHAVIOR:
-- User: "I'm feeling pretty tired today"
-- Agent thinks: [I need to infer mood~5, energy=low and call update_checkin]
-- Agent says: "That sounds exhausting. What's been keeping you busy?" 
-- Agent does: [Calls update_checkin silently in the background]
-
-The user should NEVER hear you thinking about data collection. Just have a natural conversation while tools work invisibly.
-
-Remember: You're a supportive companion, not a medical professional. Keep it grounded, realistic, and encouraging.""",
+STAY IN YOUR ROLE:
+- You are ONLY the coordinator
+- You do NOT teach, quiz, or evaluate
+- You ONLY help choose modes"""
         )
+    
+    async def on_enter(self) -> None:
+        """Called when this agent becomes active."""
+        userdata: TutorSessionData = self.session.userdata
         
-        # Current check-in state
-        self.current_checkin = {
-            "mood_score": None,
-            "energy_level": None,
-            "stressors": None,
-            "objectives": []
-        }
+        if userdata.is_first_time:
+            # First time - full introduction
+            userdata.is_first_time = False
+            await self.session.generate_reply(
+                instructions="This is their FIRST visit. Greet warmly, introduce yourself as their programming tutor, explain the three modes (Learn, Quiz, Teach Back), and ask which they'd like to try."
+            )
+        else:
+            # Returning from another mode - brief welcome back
+            await self.session.generate_reply(
+                instructions="They're RETURNING from a session. Say 'Hope you had a good session!' and ask which mode they'd like next: Learn, Quiz, or Teach Back. Keep it very brief."
+            )
     
     @function_tool
-    async def update_checkin(self, context: RunContext, field: str, value: str):
-        """Update a field in the current wellness check-in.
+    async def switch_to_learn_mode(self, context: RunContext[TutorSessionData]):
+        """Switch to learn mode where the agent explains concepts.
         
-        Args:
-            field: The field to update. Must be one of: mood_score, energy_level, stressors
-            value: The value to set for this field
-        
-        For mood_score: Should be a number 1-10
-        For energy_level: Description like "low", "medium", "high", "tired", "energized"
-        For stressors: Brief description of what's causing stress
-        
-        Call this function once for each piece of information you collect.
+        Call this when the user wants to learn about a topic.
         """
-        valid_fields = ["mood_score", "energy_level", "stressors"]
+        context.userdata.mode_history.append(("learn", None))
         
-        if field not in valid_fields:
-            return f"Invalid field. Must be one of: {', '.join(valid_fields)}"
-        
-        # Convert mood_score to integer if it's a number
-        if field == "mood_score":
-            try:
-                value = int(value)
-                if value < 1 or value > 10:
-                    return "Mood score must be between 1 and 10"
-            except ValueError:
-                return "Mood score must be a number between 1 and 10"
-        
-        self.current_checkin[field] = value
-        logger.info(f"Updated check-in: {field} = {value}")
-        
-        return f"Saved {field}: {value}"
+        # Return new agent instance for handoff (per LiveKit docs)
+        return LearnAgent(chat_ctx=self.chat_ctx), "Switching to learn mode"
     
     @function_tool
-    async def add_objective(self, context: RunContext, objective: str):
-        """Add a daily objective or goal to the current check-in.
+    async def switch_to_quiz_mode(self, context: RunContext[TutorSessionData]):
+        """Switch to quiz mode where the agent asks questions.
         
-        Args:
-            objective: A single objective/goal/intention the user wants to accomplish
-        
-        Call this function once for each objective the user mentions.
-        Users typically have 1-3 objectives per day.
+        Call this when the user wants to be quizzed on a topic.
         """
-        if not objective or len(objective.strip()) == 0:
-            return "Objective cannot be empty"
+        context.userdata.mode_history.append(("quiz", None))
         
-        self.current_checkin["objectives"].append(objective.strip())
-        logger.info(f"Added objective: {objective}")
-        
-        return f"Added objective: {objective}"
+        return QuizAgent(chat_ctx=self.chat_ctx), "Switching to quiz mode"
     
     @function_tool
-    async def complete_checkin(self, context: RunContext, summary: str):
-        """Complete the wellness check-in and save to JSON file.
+    async def switch_to_teach_back_mode(self, context: RunContext[TutorSessionData]):
+        """Switch to teach back mode where the user explains concepts.
         
-        Args:
-            summary: A brief 1-2 sentence summary YOU generate about today's check-in
-                    Example: "User is feeling positive today with good energy. Main focus is on completing work tasks and making time for exercise."
-        
-        ONLY call this after:
-        1. You have collected mood_score, energy_level (stressors is optional)
-        2. You have at least 1 objective
-        3. You have recapped everything to the user
-        4. The user confirmed the recap is correct
-        
-        This will save the entire check-in to the wellness log.
+        Call this when the user wants to:
+        - Explain a topic to you
+        - Teach you something
+        - Test their understanding by teaching
+        - Practice explaining concepts
+        - Do "teach back" or "teach-back"
         """
-        # Validate required fields
-        if self.current_checkin["mood_score"] is None:
-            return "Cannot complete check-in: mood_score is required"
+        context.userdata.mode_history.append(("teach_back", None))
         
-        if self.current_checkin["energy_level"] is None:
-            return "Cannot complete check-in: energy_level is required"
+        return TeachBackAgent(chat_ctx=self.chat_ctx), "Switching to teach back mode"
+
+
+# ===== LEARN AGENT (Matthew voice) =====
+class LearnAgent(Agent):
+    """Agent that explains concepts to the user."""
+    
+    def __init__(self, chat_ctx: ChatContext = None):
+        topics_list = ", ".join([item["title"] for item in COURSE_CONTENT.values()])
         
-        if len(self.current_checkin["objectives"]) == 0:
-            return "Cannot complete check-in: at least one objective is required"
+        super().__init__(
+            instructions=f"""You are Matthew, a patient programming teacher in LEARN mode.
+
+AVAILABLE TOPICS: {topics_list}
+
+YOUR JOB:
+1. Ask what topic they want to learn
+2. When they choose, look up the topic in your knowledge and explain based on the summary provided
+3. Keep explanations brief (ONE paragraph, 3-5 sentences)
+4. Answer follow-up questions briefly
+5. Offer to teach another topic ONLY
+
+TEACHING STYLE:
+- Concise explanations with real-world analogies
+- NEVER provide code snippets or code examples
+- Only use paragraph explanations with analogies
+- Patient and enthusiastic
+- NEVER suggest quizzes, teaching back, or any mode switches
+- NEVER ask if they want to explain concepts back
+- ONLY teach - stay in learn mode
+
+WHEN TO HAND BACK:
+- ONLY if user EXPLICITLY says: "switch mode", "quiz me", "let me teach you", "go back"
+- Say "I'll connect you with the coordinator" and call the tool
+- Do NOT proactively suggest or ask about switching modes""",
+            chat_ctx=chat_ctx,
+            tts=murf.TTS(
+                voice="en-US-matthew",
+                style="Conversation",
+                tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
+                text_pacing=True
+            )
+        )
+    
+    async def on_enter(self) -> None:
+        """Called when entering learn mode."""
+        await self.session.generate_reply(
+            instructions="You just entered LEARN mode. Welcome them and ask what programming topic they'd like to learn about today. Be enthusiastic!"
+        )
+    
+    @function_tool
+    async def return_to_coordinator(self, context: RunContext[TutorSessionData]):
+        """ONLY call this when user EXPLICITLY requests to switch modes.
         
-        if not summary or len(summary.strip()) == 0:
-            return "Cannot complete check-in: summary is required"
+        Call ONLY when user says: "switch mode", "quiz me", "let me teach you", "go back", "change mode"
+        Do NOT call for normal questions or learning - stay in learn mode by default.
+        """
+        return CoordinatorAgent(), "Returning to coordinator"
+
+
+# ===== QUIZ AGENT (Alicia voice) =====
+class QuizAgent(Agent):
+    """Agent that quizzes the user on concepts."""
+    
+    def __init__(self, chat_ctx: ChatContext = None):
+        topics_list = ", ".join([item["title"] for item in COURSE_CONTENT.values()])
         
-        # Build entry
-        entry = {
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "timestamp": datetime.now().isoformat(),
-            "mood_score": self.current_checkin["mood_score"],
-            "energy_level": self.current_checkin["energy_level"],
-            "stressors": self.current_checkin["stressors"],
-            "objectives": self.current_checkin["objectives"],
-            "summary": summary.strip()
-        }
+        super().__init__(
+            instructions=f"""You are Alicia, an encouraging quiz master in QUIZ mode.
+
+AVAILABLE TOPICS: {topics_list}
+
+YOUR JOB:
+1. Ask what topic they want to be quizzed on
+2. When they choose, look up the topic and ask questions based on the summary
+3. Give immediate feedback:
+   - If CORRECT: Celebrate enthusiastically (e.g., "Correct!", "Exactly!", "Well done!")
+   - If WRONG: Give the correct answer in ONE sentence only
+4. Ask follow-up questions to test understanding
+5. Adjust difficulty based on their performance
+6. Offer to quiz another topic ONLY
+
+QUIZ STYLE:
+- Keep answers brief - ONE sentence explanations only
+- Do NOT explain concepts deeply - just validate answers
+- Ask "why" and "how" questions
+- Include practical scenarios
+- Make it fun and interactive
+- NEVER suggest learning or teaching back modes
+- ONLY quiz - stay in quiz mode and keep asking questions
+- If they seem confused, ask another question - do NOT switch modes
+
+IMPORTANT - WHEN TO HAND BACK:
+- ONLY call return_to_coordinator tool if user EXPLICITLY says: "switch mode", "teach me", "let me explain", "go back", "change mode", "I want to learn"
+- Do NOT switch if they ask questions, are confused, get answers wrong, or want to continue
+- If unsure whether they want to switch - ASK them to clarify, do NOT call the tool
+- Stay in quiz mode by default - keep asking questions
+- Say "I'll connect you with the coordinator" ONLY when they explicitly request mode change""",
+            chat_ctx=chat_ctx,
+            tts=murf.TTS(
+                voice="en-US-alicia",
+                style="Conversation",
+                tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
+                text_pacing=True
+            )
+        )
+    
+    async def on_enter(self) -> None:
+        """Called when entering quiz mode."""
+        await self.session.generate_reply(
+            instructions="You just entered QUIZ mode. Welcome them enthusiastically and ask what programming topic they'd like to be quizzed on!"
+        )
+    
+    @function_tool
+    async def return_to_coordinator(self, context: RunContext[TutorSessionData]):
+        """CRITICAL: ONLY call when user uses EXACT phrases requesting mode switch.
         
-        # Save to JSON
-        try:
-            save_wellness_entry(entry)
-            logger.info(f"Wellness check-in completed and saved")
-            
-            # Reset state
-            self.current_checkin = {
-                "mood_score": None,
-                "energy_level": None,
-                "stressors": None,
-                "objectives": []
-            }
-            
-            return "Check-in saved successfully!"
-        except Exception as e:
-            logger.error(f"Error saving wellness check-in: {e}")
-            return f"Error saving check-in: {str(e)}"
+        Must hear EXPLICIT words like:
+        - "switch mode" or "change mode"
+        - "teach me" or "I want to learn"
+        - "let me explain" or "let me teach you"
+        - "go back" or "return to coordinator"
+        
+        DO NOT CALL if they:
+        - Ask a question or seem confused
+        - Get answers wrong
+        - Want to continue quizzing
+        - Say anything else unclear
+        
+        When in doubt: ASK "Do you want to switch modes?" - do NOT call this tool.
+        """
+        return CoordinatorAgent(), "Returning to coordinator"
+
+
+# ===== TEACH BACK AGENT (Ken voice) =====
+class TeachBackAgent(Agent):
+    """Agent that listens to user explanations and provides feedback."""
+    
+    def __init__(self, chat_ctx: ChatContext = None):
+        topics_list = ", ".join([item["title"] for item in COURSE_CONTENT.values()])
+        
+        super().__init__(
+            instructions=f"""You are Ken, a thoughtful evaluator in TEACH BACK mode.
+
+AVAILABLE TOPICS: {topics_list}
+
+YOUR JOB:
+1. Ask what concept they'd like to explain
+2. When they choose, look up the topic and listen to their explanation WITHOUT interrupting
+3. After they finish explaining, provide brief, constructive feedback in ONE paragraph:
+   - What they explained well (be specific)
+   - What they missed or got wrong (1-2 lines max to clarify the correct concept)
+   - Suggestions on terminology, detail level, or clarity
+4. After giving feedback, ask: "Would you like to explain the same concept more deeply, or would you like to change the topic?"
+5. Based on their response:
+   - If same concept: Ask them to explain it again with more depth
+   - If change topic: Ask what other concept they want to explain
+6. Repeat the feedback cycle
+
+EVALUATION STYLE:
+- Keep feedback to ONE paragraph (4-6 sentences max)
+- Start with positive feedback
+- Point out what was good and what needs improvement
+- If they got something wrong: Explain the correct concept in 1-2 lines only
+- Do NOT give detailed explanations - keep corrections brief
+- Focus on: completeness, terminology accuracy, clarity, detail level
+- Do NOT ask questions during their explanation - just listen
+- Do NOT interrupt while they're explaining
+- NEVER suggest switching modes, learning, or quizzing
+- Encouraging and constructive tone
+- Always ask if they want to go deeper or change topic after feedback
+- ONLY evaluate - stay in teach back mode
+
+IMPORTANT - WHEN TO HAND BACK:
+- ONLY call return_to_coordinator tool if user EXPLICITLY says: "switch mode", "teach me", "quiz me", "go back", "change mode", "I want to learn"
+- Do NOT switch if they ask questions, finish explaining, or want to continue
+- If unsure whether they want to switch - ASK them to clarify, do NOT call the tool
+- Stay in teach back mode by default - keep evaluating
+- Say "I'll connect you with the coordinator" ONLY when they explicitly request mode change""",
+            chat_ctx=chat_ctx,
+            tts=murf.TTS(
+                voice="en-US-ken",
+                style="Conversation",
+                tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
+                text_pacing=True
+            )
+        )
+    
+    async def on_enter(self) -> None:
+        """Called when entering teach back mode."""
+        await self.session.generate_reply(
+            instructions="You just entered TEACH BACK mode. Welcome them warmly and ask what programming concept they'd like to teach you today. Be encouraging!"
+        )
+    
+    @function_tool
+    async def return_to_coordinator(self, context: RunContext[TutorSessionData]):
+        """CRITICAL: ONLY call when user uses EXACT phrases requesting mode switch.
+        
+        Must hear EXPLICIT words like:
+        - "switch mode" or "change mode"
+        - "teach me" or "I want to learn"
+        - "quiz me" or "test me"
+        - "go back" or "return to coordinator"
+        
+        DO NOT CALL if they:
+        - Finish explaining a concept
+        - Ask a question
+        - Want to explain another concept
+        - Say anything else unclear
+        
+        When in doubt: ASK "Do you want to switch modes?" - do NOT call this tool.
+        """
+        return CoordinatorAgent(), "Returning to coordinator"
 
 
 def prewarm(proc: JobProcess):
@@ -378,20 +352,21 @@ def prewarm(proc: JobProcess):
 
 
 async def entrypoint(ctx: JobContext):
-    """Main entry point for the wellness agent."""
-    logger.info("Starting wellness agent")
+    """Main entry point for the tutor agent."""
+    logger.info("Starting teach-the-tutor agent")
     
-    # Logging setup
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
     
-    session = AgentSession(
+    # Initialize session with shared userdata
+    session = AgentSession[TutorSessionData](
+        userdata=TutorSessionData(),
         stt=deepgram.STT(model="nova-3"),
         llm=google.LLM(model="gemini-2.5-flash-lite", temperature=0.7),
         tts=murf.TTS(
-            voice="en-US-riley", 
-            style="Narration",
+            voice="en-US-ronnie",
+            style="Conversation",
             tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
             text_pacing=True
         ),
@@ -414,9 +389,9 @@ async def entrypoint(ctx: JobContext):
 
     ctx.add_shutdown_callback(log_usage)
     
-    assistant = Assistant()
+    # Start with coordinator agent
     await session.start(
-        agent=assistant,
+        agent=CoordinatorAgent(),
         room=ctx.room,
         room_input_options=RoomInputOptions(
             noise_cancellation=noise_cancellation.BVC(),
