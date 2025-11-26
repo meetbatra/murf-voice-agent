@@ -15,14 +15,14 @@ export default async function Layout({ children }: LayoutProps) {
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" fill="currentColor" className="text-primary-foreground"/>
+              <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z" fill="currentColor" className="text-primary-foreground"/>
             </svg>
           </div>
-          <span className="text-foreground font-bold text-xl">Teach-the-Tutor</span>
+          <span className="text-foreground font-bold text-xl">Physics Wallah</span>
         </div>
         
         <span className="text-muted-foreground font-mono text-xs font-bold tracking-wider uppercase">
-          Active Recall Coach
+          AI Voice Agent
         </span>
       </header>
 

@@ -46,7 +46,7 @@ export function PreConnectMessage({ className, messages = [] }: PreConnectMessag
           className={cn('pointer-events-none text-center', className)}
         >
           <ShimmerText className="text-sm font-semibold">
-            Your tutor is ready - choose a learning mode to begin!
+            Lakshya is ready - ask about JEE, NEET, and Board Exam courses!
           </ShimmerText>
         </MotionMessage>
       )}

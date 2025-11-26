@@ -6,7 +6,6 @@ import type { AppConfig } from '@/app-config';
 import { ChatTranscript } from '@/components/app/chat-transcript';
 import { PreConnectMessage } from '@/components/app/preconnect-message';
 import { TileLayout } from '@/components/app/tile-layout';
-import { WellnessSummary } from '@/components/app/wellness-summary';
 import {
   AgentControlBar,
   type ControlBarControls,
@@ -70,32 +69,7 @@ export const SessionView = ({
 
   const messages = useChatMessages();
   const [chatOpen, setChatOpen] = useState(false);
-  const [wellnessData, setwellnessData] = useState<any>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const hasCheckedForwellness = useRef(false);
-
-  // Listen for check-in completion in messages
-  useEffect(() => {
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage && !hasCheckedForwellness.current) {
-      const messageText = lastMessage.message.toLowerCase();
-      // Check if message contains check-in completion
-      if (messageText.includes('check-in') && messageText.includes('saved')) {
-        hasCheckedForwellness.current = true;
-        // Fetch the latest wellness log from backend
-        setTimeout(() => {
-          fetch('/api/wellness-log')
-            .then(res => res.json())
-            .then(data => {
-              if (data && data.sessions) {
-                setwellnessData(data);
-              }
-            })
-            .catch(err => console.error('Failed to fetch wellness:', err));
-        }, 500); // Small delay to ensure file is written
-      }
-    }
-  }, [messages]);
 
   const controls: ControlBarControls = {
     leave: true,
@@ -118,23 +92,13 @@ export const SessionView = ({
     <>
     <section className="bg-background relative z-10 h-full w-full overflow-hidden" {...props}>
       {/* Main Content Wrapper */}
-      <motion.div
-        className="h-full w-full"
-        animate={{
-          marginRight: wellnessData ? '400px' : '0px',
-        }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      >
+      <div className="h-full w-full">
         {/* Chat Transcript */}
         <div
           className={cn(
             'fixed inset-0 grid grid-cols-1 grid-rows-1',
             !chatOpen && 'pointer-events-none'
           )}
-          style={{
-            right: wellnessData ? '400px' : '0',
-            transition: 'right 0.3s ease',
-          }}
         >
         <Fade top className="absolute inset-x-4 top-0 h-40" />
         <ScrollArea ref={scrollAreaRef} className="px-4 pt-40 pb-[150px] md:px-6 md:pb-[180px]">
@@ -179,18 +143,8 @@ export const SessionView = ({
           <AgentControlBar controls={controls} onChatOpenChange={setChatOpen} />
         </div>
       </motion.div>
-      </motion.div>
+      </div>
     </section>
-
-      {/* wellness Side Panel */}
-      <AnimatePresence>
-        {wellnessData && (
-          <WellnessSummary 
-            data={wellnessData} 
-            onClose={() => setwellnessData(null)} 
-          />
-        )}
-      </AnimatePresence>
     </>
   );
 };
