@@ -1,0 +1,216 @@
+{
+  "company": {
+    "name": "Physics Wallah (PW)",
+    "website": "https://www.pw.live",
+    "description": "PW is an Indian ed-tech platform offering affordable courses for Class 6–12, JEE, NEET, UPSC, GATE and several other competitive exams.",
+    "founded": 2016,
+    "headquarters": "Noida, Uttar Pradesh, India"
+  },
+
+  "faq": [
+    {
+      "question": "What is Physics Wallah?",
+      "answer": "Physics Wallah (PW) is an Indian online education platform offering high-quality classes for school students and competitive exam aspirants. They provide live classes, recorded lectures, notes, test series, and mentorship."
+    },
+    {
+      "question": "Who founded Physics Wallah?",
+      "answer": "PW was founded by Alakh Pandey in 2016."
+    },
+    {
+      "question": "What courses does Physics Wallah offer?",
+      "answer": "PW offers courses for Classes 6–12 (CBSE/State Boards), JEE, NEET, GATE, UPSC, SSC, Banking, and foundation batches for early years."
+    },
+    {
+      "question": "Does Physics Wallah offer free content?",
+      "answer": "Yes. PW provides free notes, NCERT solutions, topic videos, and free YouTube classes."
+    },
+    {
+      "question": "Does PW provide live or recorded classes?",
+      "answer": "PW provides both live classes and recorded lectures for flexible learning."
+    },
+    {
+      "question": "How can I enroll in a PW batch?",
+      "answer": "Visit the official PW website or app, choose your batch, and complete payment to enroll."
+    },
+    {
+      "question": "Does PW provide doubt-solving?",
+      "answer": "Yes. Many paid batches include dedicated doubt-solving via chat, live sessions, or doubt faculties."
+    },
+    {
+      "question": "Is there a refund policy?",
+      "answer": "PW generally does NOT offer refunds after enrollment unless stated otherwise on a specific batch page."
+    },
+    {
+      "question": "What languages are batches available in?",
+      "answer": "Most batches are available in Hinglish (Hindi + English). Some batches are offered in pure Hindi or English."
+    },
+    {
+      "question": "Does PW provide tests and mock exams?",
+      "answer": "Yes. Batches typically include weekly tests, mock exams, and full-length test series."
+    },
+    {
+      "question": "Can I watch lectures multiple times?",
+      "answer": "Yes. Recorded lectures can be watched multiple times through the PW app or website."
+    },
+    {
+      "question": "Does PW provide printed books?",
+      "answer": "Some batches include printed books or the option to buy PW Pathshala books."
+    },
+    {
+      "question": "How affordable are PW courses?",
+      "answer": "PW is known for providing courses at very low and accessible prices (₹500–₹6000 range)."
+    },
+    {
+      "question": "Does PW offer doubt solving after class?",
+      "answer": "Yes. Most batches offer doubt support after class through chat or live doubt-solving sessions."
+    },
+    {
+      "question": "Does Physics Wallah have offline centers?",
+      "answer": "Yes. PW Vidyapeeth centers operate in various cities for offline coaching."
+    },
+    {
+      "question": "Is there a free trial?",
+      "answer": "PW does not typically offer free trials but provides free sample lectures on YouTube."
+    },
+    {
+      "question": "Does PW offer EMI?",
+      "answer": "Some high-value programs may offer EMI through third-party partners."
+    },
+    {
+      "question": "How long does batch access last?",
+      "answer": "Depending on the batch, access typically lasts until the exam year (e.g., JEE/NEET 2026)."
+    },
+    {
+      "question": "Can I change batches later?",
+      "answer": "Batch changes are usually not allowed unless explicitly mentioned."
+    },
+    {
+      "question": "Do I need a laptop to attend classes?",
+      "answer": "No. You can attend all sessions through a mobile phone using the PW app."
+    },
+    {
+      "question": "Are assignments provided?",
+      "answer": "Yes. Many batches include daily practice problems and homework."
+    },
+    {
+      "question": "Will I get mentorship?",
+      "answer": "Premium batches include mentorship channels and doubt mentors."
+    },
+    {
+      "question": "What exams does PW focus on the most?",
+      "answer": "PW is widely known for JEE and NEET preparation courses."
+    },
+    {
+      "question": "Does PW provide English-medium JEE/NEET batches?",
+      "answer": "Yes, although most popular batches are in Hinglish."
+    }
+  ],
+
+  "batches_and_pricing": [
+    {
+      "program": "JEE Ultimate CC 2026 + BITSAT Crash Course",
+      "category": "JEE",
+      "price_after_discount": 4000,
+      "original_price": 8000,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "JEE Physics Crash Course — Rajwant Sir",
+      "category": "JEE",
+      "price_after_discount": 700,
+      "original_price": 999,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "Rankers JEE 2025 Crash Course",
+      "category": "JEE",
+      "price_after_discount": 1500,
+      "original_price": 2500,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "Arjuna JEE 2026 (Class 11)",
+      "category": "JEE",
+      "price_after_discount": 3500,
+      "original_price": 5000,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "Lakshya JEE 2026 (Class 12)",
+      "category": "JEE",
+      "price_after_discount": 4999,
+      "original_price": 6000,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "NEET Arjuna Plus 2026 (Class 11)",
+      "category": "NEET",
+      "price_after_discount": 3500,
+      "original_price": 4800,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "NEET Lakshya 2026 (Class 12)",
+      "category": "NEET",
+      "price_after_discount": 4999,
+      "original_price": 5600,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "Yakeen NEET 6.0 2026 Dropper",
+      "category": "NEET",
+      "price_after_discount": 3000,
+      "original_price": 4100,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "Vijayi NEET 2025 Crash Course",
+      "category": "NEET",
+      "price_after_discount": 1200,
+      "original_price": 2000,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "Prayas Class 12 (Board Prep)",
+      "category": "Class 12",
+      "price_after_discount": 1800,
+      "original_price": 2500,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "Udaan Class 11",
+      "category": "Class 11",
+      "price_after_discount": 1600,
+      "original_price": 2400,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "Pathshala Class 10 CBSE",
+      "category": "Class 10",
+      "price_after_discount": 1200,
+      "original_price": 1800,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "Sankalp Class 9",
+      "category": "Class 9",
+      "price_after_discount": 1000,
+      "original_price": 1500,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "UDAAN Foundation Batch (Class 8)",
+      "category": "Foundation",
+      "price_after_discount": 800,
+      "original_price": 1200,
+      "medium": "Hinglish"
+    },
+    {
+      "program": "Prarambh Foundation Batch (Class 6–8 Basics)",
+      "category": "Foundation",
+      "price_after_discount": 500,
+      "original_price": 900,
+      "medium": "Hindi"
+    }
+  ]
+}

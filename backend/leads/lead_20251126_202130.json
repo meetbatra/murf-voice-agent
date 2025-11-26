@@ -1,0 +1,16 @@
+{
+  "name": "Jack",
+  "email": "Jack one two@gmail.com",
+  "company": "student",
+  "role": null,
+  "use_case": "JEE Advanced preparation",
+  "team_size": null,
+  "timeline": "May exam",
+  "qualification_score": 30,
+  "notes": [
+    "Asked about: JEE batches pricing",
+    "Asked about: JEE crash courses pricing",
+    "Asked about: NEET course for class twelve pricing"
+  ],
+  "timestamp": "2025-11-26T20:16:38.895359"
+}
