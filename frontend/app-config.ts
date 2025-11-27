@@ -20,9 +20,9 @@ export interface AppConfig {
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'WellnessCompanion',
-  pageTitle: 'Wellness Companion | AI Voice Check-In',
-  pageDescription: 'Your daily health and wellness voice companion',
+  companyName: 'SecureBank',
+  pageTitle: 'SecureBank Fraud Alert | Transaction Verification',
+  pageDescription: 'Secure fraud prevention and transaction verification service',
 
   supportsChatInput: true,
   supportsVideoInput: false,
@@ -30,10 +30,10 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   isPreConnectBufferEnabled: true,
 
   logo: '/lk-logo.svg',
-  accent: '#4A90E2',
+  accent: '#2563eb',
   logoDark: '/lk-logo-dark.svg',
-  accentDark: '#6BA3E8',
-  startButtonText: '✨ Start Check-In',
+  accentDark: '#3b82f6',
+  startButtonText: '🛡️ VERIFY NOW',
 
   // for LiveKit Cloud Sandbox
   sandboxId: undefined,
