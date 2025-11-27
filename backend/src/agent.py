@@ -1,6 +1,7 @@
 import logging
 import json
 import os
+import sqlite3
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from typing import Optional
@@ -23,34 +24,39 @@ from livekit.agents import (
 from livekit.plugins import murf, silero, google, deepgram, noise_cancellation
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
-logger = logging.getLogger("sdr-agent")
+logger = logging.getLogger("fraud-alert-agent")
 
 load_dotenv(".env.local")
 
 # Paths
-FAQ_PATH = os.path.join(os.path.dirname(__file__), "..", "faq", "pw.json")
-LEADS_DIR = os.path.join(os.path.dirname(__file__), "..", "leads")
-LEADS_SUMMARY_PATH = os.path.join(LEADS_DIR, "leads_summary.json")
+FRAUD_CASES_DB = os.path.join(os.path.dirname(__file__), "..", "fraud_cases", "fraud_cases.db")
 
-# Ensure leads directory exists
-os.makedirs(LEADS_DIR, exist_ok=True)
+# Ensure fraud_cases directory exists
+FRAUD_CASES_DIR = os.path.join(os.path.dirname(__file__), "..", "fraud_cases")
+os.makedirs(FRAUD_CASES_DIR, exist_ok=True)
 
 
 @dataclass
-class LeadData:
-    """Lead information collected during conversation."""
-    name: Optional[str] = None
-    email: Optional[str] = None
-    company: Optional[str] = None
-    role: Optional[str] = None
-    use_case: Optional[str] = None
-    team_size: Optional[str] = None
-    qualification_score: int = 0
-    notes: list = field(default_factory=list)
-    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+class FraudCaseData:
+    """Fraud case information during verification call."""
+    userName: Optional[str] = None
+    securityIdentifier: Optional[str] = None
+    cardEnding: Optional[str] = None
+    caseStatus: Optional[str] = None
+    transactionName: Optional[str] = None
+    transactionAmount: Optional[str] = None
+    transactionTime: Optional[str] = None
+    transactionCategory: Optional[str] = None
+    transactionSource: Optional[str] = None
+    transactionLocation: Optional[str] = None
+    securityQuestion: Optional[str] = None
+    securityAnswer: Optional[str] = None
+    verified: bool = False
+    customer_response: Optional[str] = None
+    resolution_notes: list = field(default_factory=list)
+    resolvedAt: Optional[str] = None
 
 
-# ===== PREWARM FUNCTION =====
 def prewarm(proc: JobProcess):
     """
     Prewarm function to load VAD model.
@@ -63,352 +69,293 @@ def prewarm(proc: JobProcess):
     logger.info("Prewarm complete")
 
 
-# ===== SDR AGENT =====
-class SDRAgent(Agent):
-    """Sales Development Representative agent for Physics Wallah lead capture."""
-    
+class FraudAlertAssistant(Agent):
+    """Fraud Alert Voice Agent for SecureBank."""
+
     def __init__(self):
-        # Load FAQ data
-        with open(FAQ_PATH, "r") as f:
-            self.faq_data = json.load(f)
-        
-        company_info = self.faq_data.get("company", {})
-        company_name = company_info.get("name", "Physics Wallah")
-        company_desc = company_info.get("description", "")
-        
         super().__init__(
-            instructions=f"""You are a friendly Sales Development Representative (SDR) for {company_name}.
+            instructions=f"""You are Matthew, a Fraud Prevention Specialist calling from SecureBank's Fraud Prevention Department.
 
-COMPANY CONTEXT:
-{company_desc}
+Your job is to contact customers about suspicious transactions and verify whether they authorized them.
 
-YOUR PERSONALITY:
-- Warm, professional, and consultative
-- Listen actively and show genuine interest
-- Use conversational Hinglish when appropriate
-- Build rapport naturally through the conversation
+CONVERSATION FLOW:
+==================
 
-RESPONSE STYLE:
-- Keep ALL responses brief and concise (2-3 sentences maximum)
-- Be direct and to the point
-- Avoid long explanations unless specifically asked
-- Voice conversations need short, snappy replies
+STEP 1: GREETING & ASK FOR NAME
+--------------------------------
+- Introduce yourself: "Hello, this is Matthew calling from SecureBank's Fraud Prevention Department."
+- State the reason: "We've detected a suspicious transaction on your account."
+- Ask for their name: "May I have your full name please?"
+- WAIT for their response
 
-CRITICAL - TOOL USAGE LIMITS:
+STEP 2: LOOKUP CASE IN DATABASE
+--------------------------------
+- When they provide their name, IMMEDIATELY call lookup_fraud_case(userName)
+- The tool will return the security question for you to ask
+- SPEAK the tool's response directly to the customer - it contains the security question
+- Do NOT remain silent after calling the tool
+
+STEP 3: ASK SECURITY QUESTION
+------------------------------
+- The security question is already asked by the tool response
+- WAIT for their answer
+
+STEP 4: VERIFY SECURITY ANSWER
+-------------------------------
+- When they provide an answer, call verify_security_answer(provided_answer)
+- The tool will return transaction details for you to present
+- SPEAK the tool's response directly to the customer
+- Do NOT remain silent after calling the tool
+
+STEP 5: PRESENT TRANSACTION INFO
+---------------------------------
+- The transaction details are already presented by the tool response
+- WAIT for their response about whether they authorized it
+
+STEP 6: RESOLUTION
+------------------
+Based on their response, call update_case_status with appropriate status.
+The tool will return a closing message - SPEAK it to the customer.
+
+IF AUTHORIZED:
+- Call: update_case_status(new_status="confirmed_safe", resolution_note="Customer confirmed transaction")
+- SPEAK the tool's response (closing message)
+
+IF NOT AUTHORIZED (Fraud):
+- Call: update_case_status(new_status="confirmed_fraud", resolution_note="Fraud confirmed. Card blocked")
+- SPEAK the tool's response (closing message)
+
+IF UNSURE:
+- Call: update_case_status(new_status="customer_unsure", resolution_note="Customer unsure")
+- SPEAK the tool's response (closing message)
+
+CRITICAL RULES:
+================
+- NEVER send empty responses - always say something to the customer
+- Tool responses contain what you should say - SPEAK THEM DIRECTLY
+- After EVERY tool call, you MUST speak the tool's return value
+- Do NOT remain silent after calling a tool
 - Use ONLY ONE tool per response turn
-- After calling a tool, WAIT for the next user message
-- NEVER chain multiple tool calls together
-- Example: Call capture_lead_field for name, then STOP and wait for next question
-- NEVER speak your internal thinking about tools
-- NEVER say things like "I should use the lookup_faq tool" or "Let me call capture_lead_field"
-- Tools are INVISIBLE to the user - use them silently in the background
-- Only speak naturally to the user, never mention tools or functions
+- Keep responses brief (1-2 sentences)
+- Always confirm you're calling FROM the bank (not asking them to call back)
 
-YOUR JOB - COMPLETE IN THIS ORDER:
-
-1. WARM GREETING (15-20 seconds)
-   - Introduce yourself as Lakshya
-   - Explain you're from {company_name}
-   - Ask how their day is going (build rapport)
-   - Ask what brings them to {company_name} today
-
-2. ANSWER QUESTIONS PHASE (STAY HERE until user says they're done)
-   CRITICAL: When they ask about courses, pricing, features, teachers - IMMEDIATELY call lookup_faq tool
-   - Pass their question topic to lookup_faq (e.g., "JEE courses", "NEET pricing", "live classes")
-   - The tool will return complete FAQ and pricing data in JSON format
-   - Read through the JSON data and find the relevant answer to their question
-   - Answer naturally using the information from the JSON - keep it SHORT (2-3 sentences max)
-   - NEVER answer from memory - ALWAYS call lookup_faq first and use that data
-   - Let the user ask their next question naturally - don't prompt them
-   - YOU ARE THE MAIN REPRESENTATIVE - never say you'll "connect them to someone" or "schedule a call with a rep"
-   - ONLY move to Step 3 when they say: "that's all", "no more questions", "thanks that's enough", "I'm good"
-
-3. GATHER LEAD INFORMATION (ONLY after they finish asking questions)
-   When they clearly signal they're finished asking questions:
-   - Say: "Great! Before you go, I'd love to get a few quick details to help you better."
-   - Then collect lead info ONE field per turn, naturally:
-   
-   Required fields (collect in this order):
-   1. Name: "What's your name?"
-   2. Email: "What's your email address?"
-   3. Use case: "Which exam are you preparing for?"
-   4. Role: "Which class are you in?"
-   5. Company: "Are you a student or working professional?" (optional)
-   6. Team size: "Studying alone or with friends?" (optional)
-   
-   IMPORTANT EMAIL HANDLING:
-   - When user says their email, they'll spell it out like "jack one two at gmail dot com"
-   - Convert numbers to digits: "one two" → "12"
-   - Convert "at" → "@"
-   - Convert "dot" → "."
-   - Example: "jack one two at gmail dot com" → "jack12@gmail.com"
-   - Store the properly formatted email using capture_lead_field
-   
-   CRITICAL: Use capture_lead_field ONCE per turn, then WAIT for their next response.
-   ONE field at a time - don't rush through multiple fields.
-   Add notes about their interests, pain points, urgency using capture_lead_field.
-
-4. QUALIFY THE LEAD (do this naturally during conversation)
-   Assess these factors (BANT model):
-   - Budget: Do they mention price concerns or budget?
-   - Authority: Are they the decision maker?
-   - Need: How urgent/important is this for them?
-   
-   Store observations in notes field.
-
-5. WRAP UP & SAVE
-   - Once all lead fields are collected, call finalize_lead
-   - Thank them for their time
-   - End on a positive note
-   - NEVER mention scheduling calls or connecting to representatives
-
-IMPORTANT RULES:
-- YOU ARE THE MAIN REPRESENTATIVE - never offer to connect them to another rep or schedule a callback
-- ONLY ONE TOOL CALL PER TURN - this is critical to avoid errors
-- After using any tool, STOP and wait for user's next message
-- Keep responses SHORT - voice conversations need brevity
-- When user asks about PW courses/pricing/features: CALL lookup_faq FIRST to get the data
-- The lookup_faq tool returns complete FAQ and pricing JSON data
-- Read the JSON carefully and answer their specific question from that data
-- ONLY use information from the JSON data - NEVER make up details
-
-CRITICAL - TWO PHASE APPROACH:
-PHASE 1 - QUESTION ANSWERING (default mode):
-- Answer their questions using lookup_faq
-- Let them ask their next question naturally - don't prompt
-- DO NOT ask for name, email, company, role, etc. during this phase
-- DO NOT collect any personal information yet
-- Stay in this phase until they say: "that's all", "no more questions", "I'm done", "that's enough"
-
-PHASE 2 - LEAD COLLECTION (only after they say they're done):
-- Say: "Great! Before you go, I'd love to get a few quick details to help you better."
-- NOW collect lead info ONE field at a time
-- Use capture_lead_field once per turn
-- Wait for their response before asking next field
-- When capturing email, convert spoken format to proper email format (e.g., "one two at gmail dot com" → "12@gmail.com")
-
-- Add notes about their interests, concerns, urgency throughout
-- Be patient - this is a conversation, not a form to fill out
-- Use their name once you know it (only in Phase 2)
-- Mirror their language style (formal/casual, English/Hinglish)
-- ONLY call finalize_lead at the very end when conversation is wrapping up
-- Add notes about their interests, concerns, urgency throughout
-- Be patient - this is a conversation, not a form to fill out
-- Use their name once you know it
-- Mirror their language style (formal/casual, English/Hinglish)
-- ONLY call finalize_lead at the very end when conversation is wrapping up
-
-FAQ CONTEXT AVAILABLE:
-You have access to our complete FAQ database covering courses, pricing, features, and more.
-Use lookup_faq tool to search with keywords and get relevant answers.""",
-            tts=murf.TTS(
-                voice="en-US-matthew",
-                style="Conversation",
-                tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
-                text_pacing=True
-            )
+TONE & STYLE:
+=============
+- Professional, calm, and reassuring
+- Clear and concise
+- Keep ALL responses brief (2-3 sentences maximum)
+"""
         )
-    
-    async def on_enter(self) -> None:
-        """Called when SDR agent becomes active."""
-        await self.session.generate_reply(
-            instructions="Start with a warm greeting. Introduce yourself as Lakshya from Physics Wallah, and ask how their day is going. Keep it friendly and natural - aim for 15-20 seconds max."
-        )
-    
+        self.case_data = FraudCaseData()
+        self.conversation_phase = "greeting"
+
     @function_tool
-    async def lookup_faq(
-        self,
-        context: RunContext[LeadData],
-        question_topic: str
-    ) -> str:
-        """Get Physics Wallah FAQ and pricing information.
-        
-        Use this when the lead asks about:
-        - Course details (JEE, NEET, Board exams, Foundation)
-        - Pricing and batch information
-        - Features (live classes, recorded lectures, doubt solving)
-        - Teachers and faculty
-        - Study materials and resources
-        - Any other company-specific questions
+    async def lookup_fraud_case(self, ctx: RunContext, userName: str) -> str:
+        """
+        Look up a fraud case by customer name and load their case details from the database.
+        Call this immediately after the customer provides their name.
         
         Args:
-            question_topic: Brief description of what they're asking about
-        
+            userName: The full name of the customer as they provided it
+            
         Returns:
-            Complete FAQ and pricing data for the LLM to answer from
+            A message to speak to the customer with the security question
         """
-        context.userdata.notes.append(f"Asked about: {question_topic}")
-        logger.info(f"Providing FAQ data for question: {question_topic}")
-        
-        # Return the complete FAQ data as formatted string
-        return json.dumps(self.faq_data, indent=2)
-    
+        try:
+            logger.info(f"Looking up fraud case for: {userName}")
+            
+            # Open connection with shorter timeout for faster failure
+            conn = sqlite3.connect(FRAUD_CASES_DB, timeout=5.0)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT * FROM fraud_cases 
+                WHERE LOWER(userName) = LOWER(?)
+            """, (userName,))
+            
+            matching_case = cursor.fetchone()
+            conn.close()
+
+            logger.info(f"Query completed for: {userName} - {'Found' if matching_case else 'Not found'}")
+            
+            if not matching_case:
+                logger.warning(f"No case found for user: {userName}")
+                return f"I apologize, but I don't have a case file for '{userName}' in our system. Let me verify with my supervisor and call you back."
+            
+            # Load the case data into session
+            self.case_data.userName = matching_case["userName"]
+            self.case_data.securityIdentifier = matching_case["securityIdentifier"]
+            self.case_data.cardEnding = matching_case["cardEnding"]
+            self.case_data.caseStatus = matching_case["caseStatus"]
+            self.case_data.transactionName = matching_case["transactionName"]
+            self.case_data.transactionAmount = str(matching_case["transactionAmount"])
+            self.case_data.transactionTime = matching_case["transactionTime"]
+            # Use try/except for optional fields since Row doesn't have .get()
+            try:
+                self.case_data.transactionCategory = matching_case["transactionCategory"]
+            except (KeyError, IndexError):
+                self.case_data.transactionCategory = None
+            try:
+                self.case_data.transactionSource = matching_case["transactionSource"]
+            except (KeyError, IndexError):
+                self.case_data.transactionSource = None
+            self.case_data.transactionLocation = matching_case["transactionLocation"]
+            self.case_data.securityQuestion = matching_case["securityQuestion"]
+            self.case_data.securityAnswer = matching_case["securityAnswer"]
+            
+            self.conversation_phase = "security_verification"
+            
+            logger.info(f"Successfully loaded case for {userName}")
+            
+            # Return what agent should ask next
+            response = f"Thank you, {userName}. For security purposes, {self.case_data.securityQuestion}"
+            logger.info(f"lookup_fraud_case returning: {response}")
+            return response
+
+        except sqlite3.Error as e:
+            logger.error(f"Database error in lookup_fraud_case: {e}")
+            return "I'm having trouble accessing our case database. Please hold while I resolve this technical issue."
+        except Exception as e:
+            logger.error(f"Error in lookup_fraud_case: {e}")
+            return "I'm experiencing a technical difficulty. Let me call you back shortly."
+
+
+
     @function_tool
-    async def capture_lead_field(
-        self,
-        context: RunContext[LeadData],
-        field_name: str,
-        field_value: str
-    ) -> str:
-        """Capture a single piece of lead information or add a note.
-        
-        Use this to save information as you collect it naturally during conversation.
+    async def verify_security_answer(self, ctx: RunContext, provided_answer: str) -> str:
+        """
+        Verify the customer's answer to their security question.
+        Call this after the customer provides their answer to the security question.
         
         Args:
-            field_name: One of: name, email, company, role, use_case, team_size, timeline, note
-            field_value: The value to save (for 'note' field, this is your observation)
-        
+            provided_answer: The answer the customer gave to the security question
+            
         Returns:
-            Confirmation message
+            A message to speak to the customer with transaction details or verification failure
         """
-        field_name = field_name.lower()
-        
-        if field_name == "note":
-            context.userdata.notes.append(field_value)
-            logger.info(f"Added note: {field_value}")
-            return "Note recorded"
-        
-        # Map field names to LeadData attributes
-        field_mapping = {
-            "name": "name",
-            "email": "email",
-            "company": "company",
-            "role": "role",
-            "use_case": "use_case",
-            "team_size": "team_size"
-        }
-        
-        if field_name in field_mapping:
-            setattr(context.userdata, field_mapping[field_name], field_value)
-            logger.info(f"Captured {field_name}: {field_value}")
-            return f"{field_name.replace('_', ' ').title()} captured successfully"
-        
-        return f"Unknown field: {field_name}"
-    
-    @function_tool
-    async def schedule_meeting(
-        self,
-        context: RunContext[LeadData],
-        preferred_date: str,
-        preferred_time: str
-    ) -> str:
-        """Schedule a meeting with the lead.
-        
-        Use this when:
-        - Lead is interested and qualified (you've gathered most info)
-        - They agree to schedule a call/meeting
-        - You need to lock in next steps
-        
-        Args:
-            preferred_date: Their preferred date (e.g., "December 2nd", "next Tuesday")
-            preferred_time: Their preferred time (e.g., "2 PM", "morning", "after 5 PM")
-        
-        Returns:
-            Confirmation message
-        """
-        meeting_note = f"Meeting scheduled: {preferred_date} at {preferred_time}"
-        context.userdata.notes.append(meeting_note)
-        
-        logger.info(f"Meeting scheduled for {context.userdata.name or 'lead'}: {preferred_date} at {preferred_time}")
-        
-        return f"Perfect! I've noted your preference for {preferred_date} at {preferred_time}. I'll send a calendar invite to {context.userdata.email or 'your email'}."
-    
-    @function_tool
-    async def finalize_lead(
-        self,
-        context: RunContext[LeadData]
-    ) -> str:
-        """Save the lead data and calculate qualification score.
-        
-        CRITICAL: Call this at the END of every conversation before saying goodbye.
-        This saves all collected information to the CRM.
-        
-        The qualification score is calculated based on BANT model:
-        - Budget indicators in notes
-        - Authority (decision maker role)
-        - Need (urgency and use case)
-        - Timeline (when they want to start)
-        
-        Returns:
-            Summary of saved lead
-        """
-        lead_data = context.userdata
-        
-        # Calculate qualification score (0-100 based on BANT)
-        score = 0
-        
-        # Budget (25 points) - check if mentioned price/budget in notes
-        if any("price" in note.lower() or "budget" in note.lower() or "₹" in note for note in lead_data.notes):
-            score += 15
-        
-        # Authority (25 points) - check role
-        if lead_data.role:
-            decision_roles = ["owner", "director", "manager", "head", "ceo", "founder", "parent"]
-            if any(role in lead_data.role.lower() for role in decision_roles):
-                score += 25
+        try:
+            logger.info(f"Verifying security answer: {provided_answer}")
+            
+            if not self.case_data.securityAnswer:
+                return "I don't have a security question on file. Let me transfer you to a specialist."
+            
+            is_correct = provided_answer.strip().lower() == self.case_data.securityAnswer.strip().lower()
+            
+            if is_correct:
+                self.case_data.verified = True
+                self.conversation_phase = "transaction_review"
+                logger.info("Security verification PASSED")
+                
+                # Return transaction details for agent to present
+                return f"Thank you. We detected a {self.case_data.transactionName} for ${self.case_data.transactionAmount} on {self.case_data.transactionTime} at {self.case_data.transactionLocation}. Did you authorize this transaction?"
             else:
-                score += 10  # Has a role, might not be decision maker
+                self.case_data.verified = False
+                self.conversation_phase = "verification_failed"
+                logger.warning("Security verification FAILED")
+                
+                # Update database with verification_failed status
+                try:
+                    conn = sqlite3.connect(FRAUD_CASES_DB, timeout=5.0)
+                    cursor = conn.cursor()
+                    
+                    cursor.execute("""
+                        UPDATE fraud_cases 
+                        SET caseStatus = ?,
+                            resolutionNotes = ?,
+                            resolvedAt = ?,
+                            updatedAt = CURRENT_TIMESTAMP
+                        WHERE userName = ?
+                    """, ("verification_failed", "Security question answered incorrectly", datetime.now().isoformat(), self.case_data.userName))
+                    
+                    conn.commit()
+                    conn.close()
+                    logger.info(f"Updated case status to verification_failed for {self.case_data.userName}")
+                except sqlite3.Error as e:
+                    logger.error(f"Failed to update verification_failed status: {e}")
+                
+                # Return failed verification message
+                return "I'm sorry, but I wasn't able to verify your identity. For your security, a specialist from our fraud team will contact you within 24 hours. Please have your ID ready. Thank you."
+
+        except Exception as e:
+            logger.error(f"Error in verify_security_answer: {e}")
+            return "I'm having trouble verifying that information. Let me transfer you to a specialist."
+
+    @function_tool
+    async def update_case_status(self, ctx: RunContext, new_status: str, resolution_note: str) -> str:
+        """
+        Update the fraud case status in the database with resolution details.
+        Call this after the customer confirms whether they authorized the transaction.
         
-        # Need (25 points) - check use case and notes
-        if lead_data.use_case:
-            score += 15
-        if any("urgent" in note.lower() or "asap" in note.lower() or "soon" in note.lower() for note in lead_data.notes):
-            score += 10
-        
-        # Completeness (25 points) - check if key fields are filled
-        if lead_data.name and lead_data.email:
-            score += 15
-        if lead_data.use_case and lead_data.role:
-            score += 10
-        
-        lead_data.qualification_score = score
-        
-        # Save individual lead file
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        lead_filename = f"lead_{timestamp}.json"
-        lead_filepath = os.path.join(LEADS_DIR, lead_filename)
-        
-        with open(lead_filepath, "w") as f:
-            json.dump(asdict(lead_data), f, indent=2)
-        
-        # Update summary file
-        summary_data = []
-        if os.path.exists(LEADS_SUMMARY_PATH):
-            with open(LEADS_SUMMARY_PATH, "r") as f:
-                summary_data = json.load(f)
-        
-        summary_data.append({
-            "name": lead_data.name,
-            "email": lead_data.email,
-            "company": lead_data.company,
-            "qualification_score": lead_data.qualification_score,
-            "timestamp": lead_data.timestamp,
-            "filename": lead_filename
-        })
-        
-        with open(LEADS_SUMMARY_PATH, "w") as f:
-            json.dump(summary_data, f, indent=2)
-        
-        logger.info(f"Lead saved: {lead_data.name} (Score: {score}) - {lead_filename}")
-        
-        return f"Lead data saved successfully. Qualification score: {score}/100. Thank you!"
+        Args:
+            new_status: The new status - use "confirmed_safe", "confirmed_fraud", or "customer_unsure"
+            resolution_note: A brief note describing what happened
+            
+        Returns:
+            A closing message to speak to the customer
+        """
+        try:
+            logger.info(f"Updating case status to: {new_status}")
+            
+            if not self.case_data.userName:
+                return "I don't have a case loaded to update. Please start over."
+            
+            conn = sqlite3.connect(FRAUD_CASES_DB)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                UPDATE fraud_cases 
+                SET caseStatus = ?,
+                    resolutionNotes = ?,
+                    resolvedAt = ?,
+                    updatedAt = CURRENT_TIMESTAMP
+                WHERE userName = ?
+            """, (new_status, resolution_note, datetime.now().isoformat(), self.case_data.userName))
+            
+            updated = cursor.rowcount > 0
+            conn.commit()
+            conn.close()
+            
+            if not updated:
+                logger.error(f"Could not find case to update for {self.case_data.userName}")
+                return "I had trouble updating the case file, but I've noted your response."
+            
+            logger.info(f"Updated case for {self.case_data.userName}")
+            self.conversation_phase = "resolution"
+            
+            # Return appropriate closing based on status
+            if new_status == "confirmed_safe":
+                return "Thank you for confirming. No further action is needed on your part. Have a great day, and thank you for banking with SecureBank!"
+            elif new_status == "confirmed_fraud":
+                return "We've immediately blocked your card to prevent further unauthorized transactions. You'll receive a replacement card within 3-5 business days, and we'll initiate a full investigation. Thank you for your prompt response."
+            elif new_status == "customer_unsure":
+                return "I understand. I recommend logging into your online banking to review your recent activity. If you notice anything suspicious, please call us immediately at 1-800-SECURE-BANK. Have a great day."
+            else:
+                return "Thank you for your time. Your case has been updated. Have a great day."
+
+        except sqlite3.Error as e:
+            logger.error(f"Database error in update_case_status: {e}")
+            return "I've noted your response and will ensure it's recorded in our system. Thank you for your time."
+        except Exception as e:
+            logger.error(f"Error in update_case_status: {e}")
+            return "I've noted your response and will ensure it's recorded in our system. Thank you for your time."
 
 
 async def entrypoint(ctx: JobContext):
-    """Main entry point for the SDR agent."""
-    logger.info("Starting Physics Wallah SDR agent")
+    """Main entry point for the fraud alert agent."""
+    logger.info("Starting SecureBank Fraud Alert agent")
     
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
     
     # Initialize agent session with proper configuration
-    session = AgentSession[LeadData](
-        userdata=LeadData(),
+    session = AgentSession[FraudCaseData](
+        userdata=FraudCaseData(),
         stt=deepgram.STT(model="nova-3"),
-        llm=google.LLM(model="gemini-2.5-flash-lite", temperature=0.7),
+        llm=google.LLM(model="gemini-2.5-flash", temperature=0.7),
         tts=murf.TTS(
-            voice="en-US-alicia",
+            voice="en-US-matthew",
             style="Conversation",
             tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
             text_pacing=True
@@ -432,9 +379,9 @@ async def entrypoint(ctx: JobContext):
 
     ctx.add_shutdown_callback(log_usage)
     
-    # Start SDR agent session
+    # Start fraud alert agent session
     await session.start(
-        agent=SDRAgent(),
+        agent=FraudAlertAssistant(),
         room=ctx.room,
         room_input_options=RoomInputOptions(
             noise_cancellation=noise_cancellation.BVC(),
