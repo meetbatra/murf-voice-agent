@@ -1,0 +1,168 @@
+{
+  "groceries": {
+    "bread": {
+      "name": "Whole Wheat Bread",
+      "price": 3.99,
+      "unit": "loaf",
+      "tags": ["bakery", "staple"]
+    },
+    "milk": {
+      "name": "Fresh Whole Milk",
+      "price": 4.49,
+      "unit": "gallon",
+      "tags": ["dairy", "refrigerated"]
+    },
+    "eggs": {
+      "name": "Large Brown Eggs",
+      "price": 5.99,
+      "unit": "dozen",
+      "tags": ["dairy", "protein"]
+    },
+    "chicken breast": {
+      "name": "Boneless Chicken Breast",
+      "price": 8.99,
+      "unit": "pound",
+      "tags": ["meat", "protein"]
+    },
+    "ground beef": {
+      "name": "Lean Ground Beef",
+      "price": 6.99,
+      "unit": "pound",
+      "tags": ["meat", "protein"]
+    },
+    "pasta": {
+      "name": "Spaghetti Pasta",
+      "price": 2.49,
+      "unit": "box",
+      "tags": ["pantry", "staple"]
+    },
+    "rice": {
+      "name": "Long Grain White Rice",
+      "price": 12.99,
+      "unit": "5 lb bag",
+      "tags": ["pantry", "staple"]
+    },
+    "tomatoes": {
+      "name": "Roma Tomatoes",
+      "price": 2.99,
+      "unit": "pound",
+      "tags": ["produce", "vegetables"]
+    },
+    "lettuce": {
+      "name": "Romaine Lettuce",
+      "price": 2.49,
+      "unit": "head",
+      "tags": ["produce", "vegetables"]
+    },
+    "bananas": {
+      "name": "Fresh Bananas",
+      "price": 0.59,
+      "unit": "pound",
+      "tags": ["produce", "fruit"]
+    },
+    "apples": {
+      "name": "Gala Apples",
+      "price": 3.99,
+      "unit": "3 lb bag",
+      "tags": ["produce", "fruit"]
+    },
+    "cheese": {
+      "name": "Cheddar Cheese",
+      "price": 5.49,
+      "unit": "8 oz block",
+      "tags": ["dairy", "refrigerated"]
+    },
+    "butter": {
+      "name": "Salted Butter",
+      "price": 4.99,
+      "unit": "pound",
+      "tags": ["dairy", "baking"]
+    },
+    "yogurt": {
+      "name": "Greek Yogurt",
+      "price": 1.29,
+      "unit": "container",
+      "tags": ["dairy", "refrigerated"]
+    },
+    "orange juice": {
+      "name": "Fresh Orange Juice",
+      "price": 5.99,
+      "unit": "half gallon",
+      "tags": ["beverages", "refrigerated"]
+    },
+    "coffee": {
+      "name": "Ground Coffee",
+      "price": 9.99,
+      "unit": "12 oz bag",
+      "tags": ["beverages", "pantry"]
+    },
+    "sugar": {
+      "name": "Granulated Sugar",
+      "price": 3.49,
+      "unit": "4 lb bag",
+      "tags": ["baking", "pantry"]
+    },
+    "flour": {
+      "name": "All-Purpose Flour",
+      "price": 4.99,
+      "unit": "5 lb bag",
+      "tags": ["baking", "pantry"]
+    },
+    "olive oil": {
+      "name": "Extra Virgin Olive Oil",
+      "price": 12.99,
+      "unit": "bottle",
+      "tags": ["cooking", "pantry"]
+    },
+    "peanut butter": {
+      "name": "Creamy Peanut Butter",
+      "price": 4.49,
+      "unit": "jar",
+      "tags": ["pantry", "spreads"]
+    },
+    "jelly": {
+      "name": "Strawberry Jelly",
+      "price": 3.29,
+      "unit": "jar",
+      "tags": ["pantry", "spreads"]
+    },
+    "cereal": {
+      "name": "Whole Grain Cereal",
+      "price": 4.99,
+      "unit": "box",
+      "tags": ["breakfast", "pantry"]
+    },
+    "potatoes": {
+      "name": "Russet Potatoes",
+      "price": 4.99,
+      "unit": "5 lb bag",
+      "tags": ["produce", "vegetables"]
+    },
+    "onions": {
+      "name": "Yellow Onions",
+      "price": 1.99,
+      "unit": "pound",
+      "tags": ["produce", "vegetables"]
+    },
+    "carrots": {
+      "name": "Fresh Carrots",
+      "price": 2.49,
+      "unit": "2 lb bag",
+      "tags": ["produce", "vegetables"]
+    }
+  },
+  "recipes": {
+    "spaghetti dinner": {
+      "ingredients": ["pasta", "ground beef", "tomatoes", "onions"]
+    },
+    "breakfast bundle": {
+      "ingredients": ["eggs", "bread", "butter", "orange juice"]
+    },
+    "pbj sandwich": {
+      "ingredients": ["bread", "peanut butter", "jelly"]
+    },
+    "chicken dinner": {
+      "ingredients": ["chicken breast", "rice", "carrots", "olive oil"]
+    }
+  }
+}

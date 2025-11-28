@@ -20,9 +20,9 @@ export interface AppConfig {
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'SecureBank',
-  pageTitle: 'SecureBank Fraud Alert | Transaction Verification',
-  pageDescription: 'Secure fraud prevention and transaction verification service',
+  companyName: 'FreshMart',
+  pageTitle: 'FreshMart Grocery Ordering | Voice Shopping Assistant',
+  pageDescription: 'Shop for groceries with your voice-powered shopping assistant',
 
   supportsChatInput: true,
   supportsVideoInput: false,
@@ -30,10 +30,10 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   isPreConnectBufferEnabled: true,
 
   logo: '/lk-logo.svg',
-  accent: '#2563eb',
+  accent: '#16a34a',
   logoDark: '/lk-logo-dark.svg',
-  accentDark: '#3b82f6',
-  startButtonText: '🛡️ VERIFY NOW',
+  accentDark: '#22c55e',
+  startButtonText: '🛒 START SHOPPING',
 
   // for LiveKit Cloud Sandbox
   sandboxId: undefined,

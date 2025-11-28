@@ -1,0 +1,50 @@
+{
+  "customer_name": "John",
+  "items": [
+    {
+      "name": "Whole Wheat Bread",
+      "quantity": 2.0,
+      "unit": "loaf",
+      "price": 3.99,
+      "total": 7.98
+    },
+    {
+      "name": "Fresh Whole Milk",
+      "quantity": 4.0,
+      "unit": "gallon",
+      "price": 4.49,
+      "total": 17.96
+    },
+    {
+      "name": "Spaghetti Pasta",
+      "quantity": 1.0,
+      "unit": "box",
+      "price": 2.49,
+      "total": 2.49
+    },
+    {
+      "name": "Lean Ground Beef",
+      "quantity": 1.0,
+      "unit": "pound",
+      "price": 6.99,
+      "total": 6.99
+    },
+    {
+      "name": "Roma Tomatoes",
+      "quantity": 1.0,
+      "unit": "pound",
+      "price": 2.99,
+      "total": 2.99
+    },
+    {
+      "name": "Yellow Onions",
+      "quantity": 1.0,
+      "unit": "pound",
+      "price": 1.99,
+      "total": 1.99
+    }
+  ],
+  "grand_total": 40.4,
+  "timestamp": "2025-11-28T19:10:14.237846",
+  "status": "confirmed"
+}
