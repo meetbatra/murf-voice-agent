@@ -1,0 +1,57 @@
+{
+  "customer_name": "Jack",
+  "items": [
+    {
+      "name": "Roma Tomatoes",
+      "quantity": 1.0,
+      "unit": "pound",
+      "price": 2.99,
+      "total": 2.99
+    },
+    {
+      "name": "Yellow Onions",
+      "quantity": 1.0,
+      "unit": "pound",
+      "price": 1.99,
+      "total": 1.99
+    },
+    {
+      "name": "Salted Butter",
+      "quantity": 2.0,
+      "unit": "pound",
+      "price": 4.99,
+      "total": 9.98
+    },
+    {
+      "name": "Large Brown Eggs",
+      "quantity": 1.0,
+      "unit": "dozen",
+      "price": 5.99,
+      "total": 5.99
+    },
+    {
+      "name": "Cheddar Cheese",
+      "quantity": 1.0,
+      "unit": "8 oz block",
+      "price": 5.49,
+      "total": 5.49
+    },
+    {
+      "name": "Whole Wheat Bread",
+      "quantity": 4.0,
+      "unit": "loaf",
+      "price": 3.99,
+      "total": 15.96
+    },
+    {
+      "name": "Fresh Whole Milk",
+      "quantity": 2.0,
+      "unit": "gallon",
+      "price": 4.49,
+      "total": 8.98
+    }
+  ],
+  "grand_total": 51.38,
+  "timestamp": "2025-11-28T19:28:19.818919",
+  "status": "confirmed"
+}

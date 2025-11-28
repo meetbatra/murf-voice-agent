@@ -46,7 +46,7 @@ export function PreConnectMessage({ className, messages = [] }: PreConnectMessag
           className={cn('pointer-events-none text-center', className)}
         >
           <ShimmerText className="text-sm font-semibold">
-            SecureBank Fraud Alert - Verify suspicious transactions on your account
+            FreshMart Shopping Assistant - Ready to help you shop for groceries
           </ShimmerText>
         </MotionMessage>
       )}

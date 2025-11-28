@@ -1,0 +1,28 @@
+{
+  "customer_name": "Travis",
+  "orders": [
+    {
+      "drinkType": "Latte",
+      "size": "large",
+      "milk": "coconut milk",
+      "extras": [
+        "vanilla syrup",
+        "hazelnut syrup"
+      ],
+      "name": "Travis"
+    },
+    {
+      "drinkType": "Mocha",
+      "size": "large",
+      "milk": "oat milk",
+      "extras": [
+        "Chocolate Drizzle",
+        "Whipped Cream"
+      ],
+      "name": "Travis"
+    }
+  ],
+  "grand_total": 11.0,
+  "timestamp": "2025-11-23T20:03:51.793589",
+  "status": "completed"
+}

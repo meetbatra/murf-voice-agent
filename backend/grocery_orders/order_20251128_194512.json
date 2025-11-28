@@ -1,0 +1,57 @@
+{
+  "customer_name": "Jack",
+  "items": [
+    {
+      "name": "Spaghetti Pasta",
+      "quantity": 1.0,
+      "unit": "box",
+      "price": 2.49,
+      "total": 2.49
+    },
+    {
+      "name": "Lean Ground Beef",
+      "quantity": 1.0,
+      "unit": "pound",
+      "price": 6.99,
+      "total": 6.99
+    },
+    {
+      "name": "Roma Tomatoes",
+      "quantity": 2.0,
+      "unit": "pound",
+      "price": 2.99,
+      "total": 5.98
+    },
+    {
+      "name": "Yellow Onions",
+      "quantity": 2.0,
+      "unit": "pound",
+      "price": 1.99,
+      "total": 3.98
+    },
+    {
+      "name": "Salted Butter",
+      "quantity": 1.0,
+      "unit": "pound",
+      "price": 4.99,
+      "total": 4.99
+    },
+    {
+      "name": "Fresh Whole Milk",
+      "quantity": 1.0,
+      "unit": "gallon",
+      "price": 4.49,
+      "total": 4.49
+    },
+    {
+      "name": "Russet Potatoes",
+      "quantity": 1.0,
+      "unit": "5 lb bag",
+      "price": 4.99,
+      "total": 4.99
+    }
+  ],
+  "grand_total": 33.910000000000004,
+  "timestamp": "2025-11-28T19:45:12.263412",
+  "status": "confirmed"
+}

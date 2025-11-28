@@ -1,0 +1,28 @@
+{
+  "customer_name": "Jack",
+  "orders": [
+    {
+      "drinkType": "Latte",
+      "size": "medium",
+      "milk": "almond milk",
+      "extras": [
+        "Cinnamon",
+        "Chocolate Drizzle"
+      ],
+      "name": "Jack"
+    },
+    {
+      "drinkType": "Mocha",
+      "size": "large",
+      "milk": "coconut milk",
+      "extras": [
+        "Vanilla Syrup",
+        "Caramel Syrup"
+      ],
+      "name": "Jack"
+    }
+  ],
+  "grand_total": 10.0,
+  "timestamp": "2025-11-23T19:53:27.529583",
+  "status": "completed"
+}
