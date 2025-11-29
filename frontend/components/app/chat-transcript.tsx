@@ -56,31 +56,37 @@ interface ChatTranscriptProps {
 export function ChatTranscript({
   hidden = false,
   messages = [],
+  className,
   ...props
 }: ChatTranscriptProps & Omit<HTMLMotionProps<'div'>, 'ref'>) {
   return (
-    <AnimatePresence>
-      {!hidden && (
-        <MotionContainer {...CONTAINER_MOTION_PROPS} {...props}>
-          {messages.map(({ id, timestamp, from, message, editTimestamp }: ReceivedChatMessage) => {
-            const locale = navigator?.language ?? 'en-US';
-            const messageOrigin = from?.isLocal ? 'local' : 'remote';
-            const hasBeenEdited = !!editTimestamp;
+    <MotionContainer 
+      className={className}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: hidden ? 0 : 1 }}
+      transition={{ duration: 0.3 }}
+      style={{
+        pointerEvents: hidden ? 'none' : 'auto',
+      }}
+      {...props}
+    >
+      {messages.map(({ id, timestamp, from, message, editTimestamp }: ReceivedChatMessage) => {
+        const locale = navigator?.language ?? 'en-US';
+        const messageOrigin = from?.isLocal ? 'local' : 'remote';
+        const hasBeenEdited = !!editTimestamp;
 
-            return (
-              <MotionChatEntry
-                key={id}
-                locale={locale}
-                timestamp={timestamp}
-                message={message}
-                messageOrigin={messageOrigin}
-                hasBeenEdited={hasBeenEdited}
-                {...MESSAGE_MOTION_PROPS}
-              />
-            );
-          })}
-        </MotionContainer>
-      )}
-    </AnimatePresence>
+        return (
+          <MotionChatEntry
+            key={id}
+            locale={locale}
+            timestamp={timestamp}
+            message={message}
+            messageOrigin={messageOrigin}
+            hasBeenEdited={hasBeenEdited}
+            {...MESSAGE_MOTION_PROPS}
+          />
+        );
+      })}
+    </MotionContainer>
   );
 }

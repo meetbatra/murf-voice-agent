@@ -20,9 +20,9 @@ export interface AppConfig {
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'FreshMart',
-  pageTitle: 'FreshMart Grocery Ordering | Voice Shopping Assistant',
-  pageDescription: 'Shop for groceries with your voice-powered shopping assistant',
+  companyName: 'Epic Quest',
+  pageTitle: 'Epic Quest | AI Dungeon Master',
+  pageDescription: 'Embark on voice-powered D&D adventures with your AI Game Master',
 
   supportsChatInput: true,
   supportsVideoInput: false,
@@ -30,10 +30,10 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   isPreConnectBufferEnabled: true,
 
   logo: '/lk-logo.svg',
-  accent: '#16a34a',
+  accent: '#9333ea',  // Purple for fantasy/magic theme
   logoDark: '/lk-logo-dark.svg',
-  accentDark: '#22c55e',
-  startButtonText: '🛒 START SHOPPING',
+  accentDark: '#a855f7',  // Lighter purple for dark mode
+  startButtonText: '⚔️ START ADVENTURE',
 
   // for LiveKit Cloud Sandbox
   sandboxId: undefined,

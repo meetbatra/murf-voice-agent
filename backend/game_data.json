@@ -1,0 +1,262 @@
+{
+  "character_classes": {
+    "warrior": {
+      "name": "Warrior",
+      "starting_health": 120,
+      "starting_items": ["Iron Sword", "Leather Armor", "Health Potion"],
+      "starting_gold": 50,
+      "special_ability": "Shield Bash",
+      "description": "A mighty warrior skilled in combat with sword and shield"
+    },
+    "mage": {
+      "name": "Mage",
+      "starting_health": 80,
+      "starting_items": ["Wooden Staff", "Spell Tome", "Mana Potion"],
+      "starting_gold": 75,
+      "special_ability": "Fireball",
+      "description": "A powerful spellcaster who commands the forces of magic"
+    },
+    "rogue": {
+      "name": "Rogue",
+      "starting_health": 90,
+      "starting_items": ["Dual Daggers", "Lockpicks", "Smoke Bomb"],
+      "starting_gold": 100,
+      "special_ability": "Sneak Attack",
+      "description": "A cunning thief skilled in stealth and precision strikes"
+    }
+  },
+  "monsters": {
+    "goblin": {
+      "name": "Goblin",
+      "health": 15,
+      "attack_damage": 5,
+      "defense": 1,
+      "loot": ["10 gold", "Rusty Dagger"],
+      "description": "A small, green-skinned creature with sharp teeth and beady eyes",
+      "encounter_text": "A goblin leaps out from behind a rock, brandishing a crude weapon!"
+    },
+    "wolf": {
+      "name": "Dire Wolf",
+      "health": 20,
+      "attack_damage": 7,
+      "defense": 2,
+      "loot": ["15 gold", "Wolf Pelt"],
+      "description": "A massive wolf with razor-sharp fangs and glowing eyes",
+      "encounter_text": "A dire wolf emerges from the shadows, its growl sending shivers down your spine!"
+    },
+    "skeleton": {
+      "name": "Skeleton Warrior",
+      "health": 18,
+      "attack_damage": 6,
+      "defense": 2,
+      "loot": ["20 gold", "Ancient Bone Shield"],
+      "description": "An undead warrior whose bones rattle as it moves",
+      "encounter_text": "The bones of a fallen warrior rise up, sword in hand, ready for battle!"
+    },
+    "dragon": {
+      "name": "Ancient Red Dragon",
+      "health": 80,
+      "attack_damage": 18,
+      "defense": 8,
+      "loot": ["500 gold", "Dragon Scale Armor", "Legendary Flame Sword"],
+      "description": "A colossal dragon with scales like molten lava and eyes of burning fire",
+      "encounter_text": "The ground trembles as an ancient dragon spreads its massive wings, filling the air with heat!"
+    },
+    "orc": {
+      "name": "Orc Raider",
+      "health": 25,
+      "attack_damage": 8,
+      "defense": 3,
+      "loot": ["25 gold", "Battle Axe"],
+      "description": "A brutish orc warrior covered in battle scars",
+      "encounter_text": "An orc raider charges toward you, swinging a massive battle axe!"
+    }
+  },
+  "items": {
+    "health potion": {
+      "name": "Health Potion",
+      "type": "consumable",
+      "effect": "restore_health",
+      "value": 30,
+      "description": "A crimson liquid that restores 30 HP when consumed"
+    },
+    "mana potion": {
+      "name": "Mana Potion",
+      "type": "consumable",
+      "effect": "restore_mana",
+      "value": 25,
+      "description": "A glowing blue liquid that restores magical energy"
+    },
+    "iron sword": {
+      "name": "Iron Sword",
+      "type": "weapon",
+      "effect": "attack_bonus",
+      "value": 10,
+      "description": "A sturdy iron blade that adds +10 to attack damage"
+    },
+    "wooden staff": {
+      "name": "Wooden Staff",
+      "type": "weapon",
+      "effect": "magic_bonus",
+      "value": 12,
+      "description": "A gnarled staff that channels magical energy for +12 magic damage"
+    },
+    "dual daggers": {
+      "name": "Dual Daggers",
+      "type": "weapon",
+      "effect": "attack_bonus",
+      "value": 8,
+      "description": "Twin daggers perfect for quick strikes, +8 attack damage each"
+    },
+    "leather armor": {
+      "name": "Leather Armor",
+      "type": "armor",
+      "effect": "defense_bonus",
+      "value": 5,
+      "description": "Light armor that provides +5 defense"
+    },
+    "dragon scale armor": {
+      "name": "Dragon Scale Armor",
+      "type": "armor",
+      "effect": "defense_bonus",
+      "value": 20,
+      "description": "Legendary armor crafted from dragon scales, +20 defense"
+    },
+    "fireball scroll": {
+      "name": "Fireball Scroll",
+      "type": "consumable",
+      "effect": "damage",
+      "value": 50,
+      "description": "A magical scroll that unleashes a devastating fireball for 50 damage"
+    },
+    "smoke bomb": {
+      "name": "Smoke Bomb",
+      "type": "consumable",
+      "effect": "flee_bonus",
+      "value": 100,
+      "description": "Creates a cloud of smoke, guaranteeing escape from combat"
+    },
+    "legendary flame sword": {
+      "name": "Legendary Flame Sword",
+      "type": "weapon",
+      "effect": "attack_bonus",
+      "value": 30,
+      "description": "A sword wreathed in eternal flames, +30 attack damage"
+    }
+  },
+  "locations": {
+    "village_square": {
+      "name": "Peaceful Village Square",
+      "description": "A quiet village with thatched-roof cottages and friendly townsfolk. The smell of fresh bread wafts from the bakery.",
+      "encounters": ["merchant", "quest_giver", "traveler"],
+      "danger_level": 0,
+      "paths": ["Dark Forest", "Mountain Path", "Old Cave"]
+    },
+    "dark_forest": {
+      "name": "Dark Forest",
+      "description": "Ancient trees block out the sun, their twisted branches creating eerie shadows. You hear strange noises in the distance.",
+      "encounters": ["goblin", "wolf", "treasure_chest"],
+      "danger_level": 3,
+      "paths": ["Village Square", "Haunted Ruins", "Forest Clearing"]
+    },
+    "mountain_path": {
+      "name": "Mountain Path",
+      "description": "A steep, rocky path winds up the mountainside. The air grows thinner and colder with each step.",
+      "encounters": ["orc", "mountain_goat", "cave_entrance"],
+      "danger_level": 4,
+      "paths": ["Village Square", "Dragon's Lair", "Mountain Peak"]
+    },
+    "old_cave": {
+      "name": "Old Cave",
+      "description": "Darkness envelops you as you enter the cave. Water drips from stalactites, echoing through the chambers.",
+      "encounters": ["skeleton", "treasure_chest", "hidden_passage"],
+      "danger_level": 3,
+      "paths": ["Village Square", "Underground Lake", "Secret Chamber"]
+    },
+    "dragons_lair": {
+      "name": "Dragon's Lair",
+      "description": "The entrance to a massive cavern. Scorched earth and bones litter the ground. Heat radiates from within.",
+      "encounters": ["dragon", "treasure_hoard"],
+      "danger_level": 10,
+      "paths": ["Mountain Path"]
+    },
+    "haunted_ruins": {
+      "name": "Haunted Ruins",
+      "description": "Crumbling stone structures covered in vines. Ghostly whispers seem to emanate from the walls.",
+      "encounters": ["skeleton", "skeleton", "ancient_artifact"],
+      "danger_level": 5,
+      "paths": ["Dark Forest", "Cursed Cemetery"]
+    }
+  },
+  "quests": [
+    {
+      "id": "rescue_princess",
+      "title": "Rescue the Princess",
+      "description": "The king's daughter has been kidnapped by the ancient dragon. Brave the Dragon's Lair and bring her home safely.",
+      "reward_gold": 1000,
+      "reward_items": ["Royal Medallion", "Health Potion"],
+      "difficulty": "legendary",
+      "location": "dragons_lair"
+    },
+    {
+      "id": "clear_goblin_camp",
+      "title": "Clear the Goblin Camp",
+      "description": "A band of goblins has been terrorizing travelers in the Dark Forest. Defeat them and bring peace to the road.",
+      "reward_gold": 100,
+      "reward_items": ["Silver Ring"],
+      "difficulty": "easy",
+      "location": "dark_forest"
+    },
+    {
+      "id": "retrieve_ancient_artifact",
+      "title": "Retrieve the Ancient Artifact",
+      "description": "An ancient magical artifact lies hidden in the Haunted Ruins. Recover it for the village mage.",
+      "reward_gold": 250,
+      "reward_items": ["Mana Potion", "Magic Amulet"],
+      "difficulty": "medium",
+      "location": "haunted_ruins"
+    },
+    {
+      "id": "slay_mountain_orc",
+      "title": "Slay the Mountain Orc Chief",
+      "description": "A powerful orc chief has claimed the mountain path as his territory. Defeat him to reopen the trade route.",
+      "reward_gold": 200,
+      "reward_items": ["Battle Axe", "Health Potion"],
+      "difficulty": "medium",
+      "location": "mountain_path"
+    }
+  ],
+  "random_events": [
+    {
+      "type": "treasure_chest",
+      "description": "You discover a weathered chest hidden beneath some rubble.",
+      "loot": ["50 gold", "Health Potion"]
+    },
+    {
+      "type": "merchant",
+      "description": "A traveling merchant approaches you, his cart filled with various goods.",
+      "dialogue": "Greetings, traveler! Care to see my wares? I have potions and supplies."
+    },
+    {
+      "type": "quest_giver",
+      "description": "An elderly villager rushes toward you, worry etched on their face.",
+      "dialogue": "Please, brave adventurer! I need your help with a matter of great urgency."
+    },
+    {
+      "type": "traveler",
+      "description": "A fellow adventurer rests by the roadside, tending to their wounds.",
+      "dialogue": "Be careful out there. The path ahead is more dangerous than it looks."
+    },
+    {
+      "type": "hidden_passage",
+      "description": "You notice a crack in the wall that seems to lead somewhere.",
+      "result": "You discover a secret chamber filled with ancient treasures!"
+    },
+    {
+      "type": "trap",
+      "description": "Click! You've triggered a trap!",
+      "damage": 15,
+      "result": "Arrows shoot out from the walls!"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "campaign_id": "campaign_20251129_202444",
+  "player_name": "Jack",
+  "character": {
+    "name": "Jack",
+    "class": "Warrior",
+    "health": 120,
+    "max_health": 120,
+    "inventory": [
+      "Iron Sword",
+      "Leather Armor",
+      "Dragon Scale Armor",
+      "Legendary Flame Sword"
+    ],
+    "gold": 550
+  },
+  "progress": {
+    "current_location": "village_square",
+    "visited_locations": [
+      "village_square",
+      "mountain_path",
+      "dragons_lair"
+    ],
+    "active_quests": [],
+    "completed_quests": [],
+    "major_events": [
+      "Defeated Ancient Red Dragon"
+    ],
+    "turn_count": 4
+  },
+  "timestamp": "2025-11-29T20:24:44.356525"
+}
