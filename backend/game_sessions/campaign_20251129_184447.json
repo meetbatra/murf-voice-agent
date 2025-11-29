@@ -1,0 +1,31 @@
+{
+  "campaign_id": "campaign_20251129_184447",
+  "player_name": "Jack",
+  "character": {
+    "name": "Jackson",
+    "class": "Warrior",
+    "health": 120,
+    "max_health": 120,
+    "inventory": [
+      "Iron Sword",
+      "Leather Armor",
+      "Health Potion",
+      "Wolf Pelt"
+    ],
+    "gold": 65
+  },
+  "progress": {
+    "current_location": "village_square",
+    "visited_locations": [
+      "village_square",
+      "dark_forest"
+    ],
+    "active_quests": [],
+    "completed_quests": [],
+    "major_events": [
+      "Defeated Dire Wolf"
+    ],
+    "turn_count": 2
+  },
+  "timestamp": "2025-11-29T18:44:47.000051"
+}

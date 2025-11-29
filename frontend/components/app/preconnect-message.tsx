@@ -45,8 +45,8 @@ export function PreConnectMessage({ className, messages = [] }: PreConnectMessag
           aria-hidden={messages.length > 0}
           className={cn('pointer-events-none text-center', className)}
         >
-          <ShimmerText className="text-sm font-semibold">
-            FreshMart Shopping Assistant - Ready to help you shop for groceries
+          <ShimmerText className="text-base font-semibold text-purple-600/90 drop-shadow-lg">
+            ⚔️ Epic Quest - Your AI Dungeon Master is ready to begin your adventure ⚔️
           </ShimmerText>
         </MotionMessage>
       )}
