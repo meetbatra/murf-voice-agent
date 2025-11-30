@@ -1,0 +1,290 @@
+{
+  "products": [
+    {
+      "id": "PROD001",
+      "name": "Premium Wireless Headphones",
+      "category": "Electronics",
+      "price": 299.99,
+      "description": "High-quality noise-cancelling wireless headphones with 30-hour battery life",
+      "stock": 45,
+      "colors": ["Black", "Silver", "Blue"],
+      "sizes": null,
+      "rating": 4.8
+    },
+    {
+      "id": "PROD002",
+      "name": "Smart Fitness Watch",
+      "category": "Electronics",
+      "price": 199.99,
+      "description": "Advanced fitness tracking with heart rate monitor and GPS",
+      "stock": 32,
+      "colors": ["Black", "Rose Gold", "Space Gray"],
+      "sizes": ["S", "M", "L"],
+      "rating": 4.6
+    },
+    {
+      "id": "PROD003",
+      "name": "Wireless Earbuds Pro",
+      "category": "Electronics",
+      "price": 179.99,
+      "description": "True wireless earbuds with active noise cancellation and 24-hour case battery",
+      "stock": 88,
+      "colors": ["White", "Black", "Rose Gold"],
+      "sizes": null,
+      "rating": 4.7
+    },
+    {
+      "id": "PROD004",
+      "name": "4K Action Camera",
+      "category": "Electronics",
+      "price": 349.99,
+      "description": "Waterproof 4K action camera with image stabilization and WiFi",
+      "stock": 23,
+      "colors": ["Black", "Silver"],
+      "sizes": null,
+      "rating": 4.5
+    },
+    {
+      "id": "PROD005",
+      "name": "Portable Power Bank",
+      "category": "Electronics",
+      "price": 49.99,
+      "description": "20000mAh fast-charging power bank with dual USB ports",
+      "stock": 112,
+      "colors": ["Black", "White", "Blue"],
+      "sizes": null,
+      "rating": 4.4
+    },
+    {
+      "id": "PROD006",
+      "name": "Cotton T-Shirt",
+      "category": "Clothing",
+      "price": 29.99,
+      "description": "100% organic cotton t-shirt, comfortable and breathable",
+      "stock": 120,
+      "colors": ["White", "Black", "Navy", "Gray"],
+      "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
+      "rating": 4.5
+    },
+    {
+      "id": "PROD007",
+      "name": "Denim Jeans",
+      "category": "Clothing",
+      "price": 69.99,
+      "description": "Classic fit denim jeans with stretch comfort",
+      "stock": 92,
+      "colors": ["Blue", "Black", "Gray"],
+      "sizes": ["28", "30", "32", "34", "36", "38"],
+      "rating": 4.3
+    },
+    {
+      "id": "PROD008",
+      "name": "Hooded Sweatshirt",
+      "category": "Clothing",
+      "price": 54.99,
+      "description": "Cozy fleece hoodie with kangaroo pocket and drawstring hood",
+      "stock": 85,
+      "colors": ["Gray", "Black", "Navy", "Red"],
+      "sizes": ["S", "M", "L", "XL", "XXL"],
+      "rating": 4.6
+    },
+    {
+      "id": "PROD009",
+      "name": "Summer Dress",
+      "category": "Clothing",
+      "price": 79.99,
+      "description": "Lightweight floral print dress perfect for warm weather",
+      "stock": 64,
+      "colors": ["Blue", "Pink", "Yellow", "White"],
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "rating": 4.7
+    },
+    {
+      "id": "PROD010",
+      "name": "Athletic Shorts",
+      "category": "Clothing",
+      "price": 34.99,
+      "description": "Moisture-wicking athletic shorts with zip pockets",
+      "stock": 98,
+      "colors": ["Black", "Navy", "Gray", "Red"],
+      "sizes": ["S", "M", "L", "XL"],
+      "rating": 4.4
+    },
+    {
+      "id": "PROD011",
+      "name": "Running Shoes",
+      "category": "Footwear",
+      "price": 129.99,
+      "description": "Professional running shoes with responsive cushioning",
+      "stock": 68,
+      "colors": ["Black", "White", "Red", "Blue"],
+      "sizes": ["7", "8", "9", "10", "11", "12"],
+      "rating": 4.7
+    },
+    {
+      "id": "PROD012",
+      "name": "Casual Sneakers",
+      "category": "Footwear",
+      "price": 89.99,
+      "description": "Comfortable canvas sneakers for everyday wear",
+      "stock": 102,
+      "colors": ["White", "Black", "Navy", "Gray"],
+      "sizes": ["6", "7", "8", "9", "10", "11", "12"],
+      "rating": 4.5
+    },
+    {
+      "id": "PROD013",
+      "name": "Hiking Boots",
+      "category": "Footwear",
+      "price": 159.99,
+      "description": "Waterproof hiking boots with ankle support and rugged sole",
+      "stock": 47,
+      "colors": ["Brown", "Black", "Tan"],
+      "sizes": ["7", "8", "9", "10", "11", "12", "13"],
+      "rating": 4.8
+    },
+    {
+      "id": "PROD014",
+      "name": "Sandals",
+      "category": "Footwear",
+      "price": 44.99,
+      "description": "Comfortable slip-on sandals with arch support",
+      "stock": 124,
+      "colors": ["Black", "Brown", "Navy", "Beige"],
+      "sizes": ["6", "7", "8", "9", "10", "11"],
+      "rating": 4.3
+    },
+    {
+      "id": "PROD015",
+      "name": "Leather Backpack",
+      "category": "Accessories",
+      "price": 89.99,
+      "description": "Genuine leather backpack with laptop compartment",
+      "stock": 28,
+      "colors": ["Brown", "Black"],
+      "sizes": null,
+      "rating": 4.9
+    },
+    {
+      "id": "PROD016",
+      "name": "Sunglasses",
+      "category": "Accessories",
+      "price": 149.99,
+      "description": "UV protection polarized sunglasses",
+      "stock": 41,
+      "colors": ["Black", "Tortoise", "Silver"],
+      "sizes": null,
+      "rating": 4.6
+    },
+    {
+      "id": "PROD017",
+      "name": "Stainless Steel Water Bottle",
+      "category": "Accessories",
+      "price": 24.99,
+      "description": "Insulated water bottle keeps drinks cold for 24 hours",
+      "stock": 150,
+      "colors": ["Silver", "Black", "Blue", "Pink"],
+      "sizes": ["500ml", "750ml", "1000ml"],
+      "rating": 4.8
+    },
+    {
+      "id": "PROD018",
+      "name": "Canvas Tote Bag",
+      "category": "Accessories",
+      "price": 19.99,
+      "description": "Eco-friendly canvas tote bag with reinforced handles",
+      "stock": 203,
+      "colors": ["Natural", "Black", "Navy", "Gray"],
+      "sizes": null,
+      "rating": 4.5
+    },
+    {
+      "id": "PROD019",
+      "name": "Leather Belt",
+      "category": "Accessories",
+      "price": 39.99,
+      "description": "Genuine leather belt with reversible buckle",
+      "stock": 76,
+      "colors": ["Brown", "Black"],
+      "sizes": ["S", "M", "L", "XL"],
+      "rating": 4.7
+    },
+    {
+      "id": "PROD020",
+      "name": "Beanie Hat",
+      "category": "Accessories",
+      "price": 22.99,
+      "description": "Warm knit beanie with foldable cuff",
+      "stock": 134,
+      "colors": ["Black", "Gray", "Navy", "Red", "Beige"],
+      "sizes": null,
+      "rating": 4.6
+    },
+    {
+      "id": "PROD021",
+      "name": "Yoga Mat",
+      "category": "Fitness",
+      "price": 39.99,
+      "description": "Non-slip eco-friendly yoga mat with carrying strap",
+      "stock": 76,
+      "colors": ["Purple", "Blue", "Green", "Pink"],
+      "sizes": null,
+      "rating": 4.7
+    },
+    {
+      "id": "PROD022",
+      "name": "Resistance Bands Set",
+      "category": "Fitness",
+      "price": 29.99,
+      "description": "Set of 5 resistance bands with different resistance levels",
+      "stock": 91,
+      "colors": ["Multi"],
+      "sizes": null,
+      "rating": 4.6
+    },
+    {
+      "id": "PROD023",
+      "name": "Adjustable Dumbbells",
+      "category": "Fitness",
+      "price": 249.99,
+      "description": "Pair of adjustable dumbbells from 5 to 52.5 lbs",
+      "stock": 18,
+      "colors": ["Black"],
+      "sizes": null,
+      "rating": 4.8
+    },
+    {
+      "id": "PROD024",
+      "name": "Jump Rope",
+      "category": "Fitness",
+      "price": 14.99,
+      "description": "Speed jump rope with ball bearings and adjustable length",
+      "stock": 167,
+      "colors": ["Black", "Blue", "Red"],
+      "sizes": null,
+      "rating": 4.5
+    },
+    {
+      "id": "PROD025",
+      "name": "Foam Roller",
+      "category": "Fitness",
+      "price": 34.99,
+      "description": "High-density foam roller for muscle recovery and massage",
+      "stock": 58,
+      "colors": ["Black", "Blue", "Pink"],
+      "sizes": null,
+      "rating": 4.7
+    },
+    {
+      "id": "PROD026",
+      "name": "Bluetooth Speaker",
+      "category": "Electronics",
+      "price": 79.99,
+      "description": "Portable waterproof speaker with 12-hour battery",
+      "stock": 55,
+      "colors": ["Black", "Blue", "Red"],
+      "sizes": null,
+      "rating": 4.4
+    }
+  ]
+}

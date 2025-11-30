@@ -1,0 +1,44 @@
+{
+  "order_id": "ORD20251130171228",
+  "customer_name": "Jack",
+  "customer_email": "jack12@gmail.com",
+  "items": [
+    {
+      "product_id": "PROD010",
+      "quantity": 1,
+      "size": "M",
+      "color": "Black",
+      "name": "Athletic Shorts",
+      "price": 34.99
+    },
+    {
+      "product_id": "PROD012",
+      "quantity": 1,
+      "size": "8",
+      "color": "White",
+      "name": "Casual Sneakers",
+      "price": 89.99
+    },
+    {
+      "product_id": "PROD005",
+      "quantity": 1,
+      "size": null,
+      "color": "Black",
+      "name": "Portable Power Bank",
+      "price": 49.99
+    },
+    {
+      "product_id": "PROD003",
+      "quantity": 1,
+      "size": null,
+      "color": "White",
+      "name": "Wireless Earbuds Pro",
+      "price": 179.99
+    }
+  ],
+  "total": 354.96,
+  "currency": "USD",
+  "status": "confirmed",
+  "timestamp": "2025-11-30T17:12:28.048329",
+  "payment_method": "voice_order"
+}
