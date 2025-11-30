@@ -123,12 +123,12 @@ export function TileLayout({ chatOpen }: TileLayoutProps) {
                     delay: animationDelay,
                   }}
                   className={cn(
-                    'bg-linear-to-br from-purple-950 to-violet-950 aspect-square h-[90px] rounded-lg border border-purple-500/30 transition-[border,drop-shadow] relative overflow-hidden',
-                    chatOpen && 'border-purple-500/50 shadow-lg shadow-purple-500/20 delay-200'
+                    'bg-linear-to-br from-green-950 to-emerald-950 aspect-square h-[90px] rounded-lg border border-green-500/30 transition-[border,drop-shadow] relative overflow-hidden',
+                    chatOpen && 'border-green-500/50 shadow-lg shadow-green-500/20 delay-200'
                   )}
                 >
                   {/* Glowing background effect */}
-                  <div className="absolute inset-0 bg-linear-to-br from-purple-600/20 to-violet-600/20 blur-xl"></div>
+                  <div className="absolute inset-0 bg-linear-to-br from-green-600/20 to-emerald-600/20 blur-xl"></div>
                   
                   <BarVisualizer
                     barCount={5}
@@ -139,9 +139,9 @@ export function TileLayout({ chatOpen }: TileLayoutProps) {
                   >
                     <span
                       className={cn([
-                        'bg-purple-600/30 min-h-2.5 w-2.5 rounded-full',
+                        'bg-green-600/30 min-h-2.5 w-2.5 rounded-full',
                         'origin-center transition-colors duration-250 ease-linear',
-                        'data-[lk-highlighted=true]:bg-purple-500 data-[lk-highlighted=true]:shadow-lg data-[lk-highlighted=true]:shadow-purple-500/50 data-[lk-muted=true]:bg-purple-900/50',
+                        'data-[lk-highlighted=true]:bg-green-500 data-[lk-highlighted=true]:shadow-lg data-[lk-highlighted=true]:shadow-green-500/50 data-[lk-muted=true]:bg-green-900/50',
                       ])}
                     />
                   </BarVisualizer>
@@ -177,7 +177,7 @@ export function TileLayout({ chatOpen }: TileLayoutProps) {
                     },
                   }}
                   className={cn(
-                    'overflow-hidden bg-black drop-shadow-xl/80 border-2 border-purple-500/30',
+                    'overflow-hidden bg-black drop-shadow-xl/80 border-2 border-green-500/30',
                     chatOpen ? 'h-[90px]' : 'h-auto w-full'
                   )}
                 >
@@ -228,7 +228,7 @@ export function TileLayout({ chatOpen }: TileLayoutProps) {
                     trackRef={cameraTrack || screenShareTrack}
                     width={(cameraTrack || screenShareTrack)?.publication.dimensions?.width ?? 0}
                     height={(cameraTrack || screenShareTrack)?.publication.dimensions?.height ?? 0}
-                    className="bg-muted aspect-square w-[90px] rounded-lg object-cover border-2 border-purple-500/30"
+                    className="bg-muted aspect-square w-[90px] rounded-lg object-cover border-2 border-green-500/30"
                   />
                 </MotionContainer>
               )}

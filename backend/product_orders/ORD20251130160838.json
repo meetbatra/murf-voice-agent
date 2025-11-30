@@ -1,0 +1,36 @@
+{
+  "order_id": "ORD20251130160838",
+  "customer_name": "Jack",
+  "customer_email": "jack12@gmail.com",
+  "items": [
+    {
+      "product_id": "PROD008",
+      "quantity": 1,
+      "size": "L",
+      "color": "Red",
+      "name": "Hooded Sweatshirt",
+      "price": 54.99
+    },
+    {
+      "product_id": "PROD003",
+      "quantity": 1,
+      "size": null,
+      "color": "Black",
+      "name": "Wireless Earbuds Pro",
+      "price": 179.99
+    },
+    {
+      "product_id": "PROD012",
+      "quantity": 1,
+      "size": "8",
+      "color": "Black",
+      "name": "Casual Sneakers",
+      "price": 89.99
+    }
+  ],
+  "total": 324.97,
+  "currency": "USD",
+  "status": "confirmed",
+  "timestamp": "2025-11-30T16:08:38.208874",
+  "payment_method": "voice_order"
+}

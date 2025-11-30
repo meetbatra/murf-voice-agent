@@ -1,10 +1,9 @@
 import logging
 import json
 import os
-import random
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import Annotated, Optional
 
 from dotenv import load_dotenv # type: ignore
 from livekit.agents import ( # type: ignore
@@ -24,681 +23,537 @@ from livekit.agents import ( # type: ignore
 from livekit.plugins import murf, silero, google, deepgram, noise_cancellation # type: ignore
 from livekit.plugins.turn_detector.multilingual import MultilingualModel # type: ignore
 
-logger = logging.getLogger("dnd-gamemaster")
+logger = logging.getLogger("shopping-assistant")
 
 load_dotenv(".env.local")
 
 # Paths
-GAME_DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "game_data.json")
-GAME_SESSIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "game_sessions")
+PRODUCT_CATALOG_PATH = os.path.join(os.path.dirname(__file__), "..", "product_catalog.json")
+ORDERS_DIR = os.path.join(os.path.dirname(__file__), "..", "product_orders")
 
-# Ensure game sessions directory exists
-os.makedirs(GAME_SESSIONS_DIR, exist_ok=True)
+# Ensure orders directory exists
+os.makedirs(ORDERS_DIR, exist_ok=True)
 
 
 @dataclass
-class CampaignState:
-    """D&D campaign state tracking character, progress, and combat."""
-    # Player Info
-    player_name: Optional[str] = None
-    character_name: Optional[str] = None
-    character_class: Optional[str] = None
+class ShoppingSession:
+    """Shopping session state tracking cart, orders, and browsing."""
+    # User Info
+    customer_name: Optional[str] = None
+    customer_email: Optional[str] = None
     
-    # Character Stats
-    health: int = 100
-    max_health: int = 100
-    inventory: list[str] = field(default_factory=list)
-    gold: int = 50
+    # Shopping Cart
+    cart_items: list[dict] = field(default_factory=list)
     
-    # Game Progress
-    current_location: str = "village_square"
-    active_quests: list[str] = field(default_factory=list)
-    completed_quests: list[str] = field(default_factory=list)
-    visited_locations: list[str] = field(default_factory=lambda: ["village_square"])
+    # Browsing State
+    current_category: Optional[str] = None
+    viewed_products: list[str] = field(default_factory=list)
     
-    # Combat State
-    in_combat: bool = False
-    enemy_name: Optional[str] = None
-    enemy_health: int = 0
-    enemy_max_health: int = 0
-    enemy_attack: int = 0
-    enemy_defense: int = 0
+    # Order History
+    last_order_id: Optional[str] = None
     
-    # Narrative Tracking
-    turn_count: int = 0
-    major_events: list[str] = field(default_factory=list)
+    # Preferences
+    preferred_categories: list[str] = field(default_factory=list)
+    budget_max: Optional[float] = None
 
 
 def prewarm(proc: JobProcess):
-    """
-    Prewarm function to load VAD model and game data.
-    """
-    logger.info("Prewarming: Loading VAD model and game data")
+    """Prewarm function to load VAD model and product catalog."""
+    logger.info("Prewarming: Loading VAD model and product catalog")
     
     # Load VAD model
     proc.userdata["vad"] = silero.VAD.load()
     
-    # Load game data (monsters, items, locations, quests)
+    # Load product catalog
     try:
-        with open(GAME_DATA_PATH, 'r') as f:
-            proc.userdata["game_data"] = json.load(f)
-        logger.info(f"Loaded game data with {len(proc.userdata['game_data'].get('monsters', {}))} monsters")
+        with open(PRODUCT_CATALOG_PATH, 'r') as f:
+            proc.userdata["product_catalog"] = json.load(f)
+        logger.info(f"Loaded product catalog with {len(proc.userdata['product_catalog'].get('products', []))} products")
     except Exception as e:
-        logger.error(f"Error loading game data: {e}")
-        proc.userdata["game_data"] = {}
+        logger.error(f"Error loading product catalog: {e}")
+        proc.userdata["product_catalog"] = {"products": []}
     
     logger.info("Prewarm complete")
 
 
-class DnDGameMaster(Agent):
-    """Epic D&D-style Game Master voice agent."""
+class ShoppingAgent(Agent):
+    """AI-powered voice shopping assistant inspired by Agentic Commerce Protocol."""
 
-    def __init__(self, game_data: dict):
+    def __init__(self, product_catalog: dict):
         super().__init__(
-            instructions="""You are Gandor, a dramatic, spooky, and darkly humorous Game Master who speaks in SHORT bursts!
+            instructions="""You are Ava, a friendly and helpful AI shopping assistant who speaks naturally and conversationally!
 
-CORE RULES:
-===========
-✅ Maximum 1-2 sentences per response
-✅ Pack drama, atmosphere, and humor into every line using ONLY spoken words
-✅ Always show dice rolls: "Roll 18" or "Rolled a 3"
-✅ NO sound effects, NO asterisks, NO caps - just dramatic spoken language
-✅ Use theatrical language, pauses with ellipses, and vivid descriptions
+CORE PERSONALITY:
+=================
+✅ Warm, friendly, and enthusiastic about helping customers find what they need
+✅ Speak in natural conversational English - like talking to a helpful friend
+✅ Keep responses concise and to-the-point (2-3 sentences max)
+✅ Be proactive - suggest products, alternatives, and deals
+✅ Always confirm important actions (adding to cart, placing orders)
 
-STYLE EXAMPLES:
-===============
-Combat Hit:
-✅ "Roll 18... your blade strikes true! Fifteen damage, the goblin screams in agony!"
-✅ "Rolled 14, you cut deep! Twelve damage, it bleeds beautifully."
+FUNCTION CALLING RULES:
+=======================
+⚠️ CRITICAL: When calling ANY function tool, you MUST include ALL parameters!
+⚠️ For optional parameters you don't need, send null (not undefined, not omitted)
 
-Combat Miss:
-✅ "Roll 3... you swing at nothing but air! The goblin cackles with glee!"
-✅ "Rolled a 5, complete miss! The beast dodges and winks at you mockingly."
+Example correct function calls:
+✅ browse_products({"category": "Clothing", "color": "Red", "max_price": null, "min_price": null})
+✅ browse_products({"category": null, "color": null, "max_price": 100, "min_price": 50})
+✅ add_to_cart({"product_id": "prod-001", "quantity": 1, "size": "L", "color": null})
 
-Exploration:
-✅ "Dark forest ahead... something howls in the distance, shadows move wrong. North or east?"
-✅ "Ancient cave entrance... drip, drip, drip... smells like death. Do you enter?"
+❌ NEVER omit parameters - always send null if not needed!
+❌ browse_products({"category": "Clothing"}) - WRONG! Missing other params
 
-Encounters:
-✅ "A goblin leaps from the shadows! Fifteen health, its eyes gleam with murder. Fight or flee?"
-✅ "Bones rattle as a skeleton rises before you! Eighteen health, this will not be pleasant."
+PRODUCT CATALOG KNOWLEDGE:
+==========================
+Available Categories (use EXACT names):
+- Electronics (headphones, speakers, watches)
+- Clothing (t-shirts, jeans)
+- Footwear (running shoes)
+- Accessories (backpacks, sunglasses, water bottles)
+- Fitness (yoga mats)
 
-Victory:
-✅ "Victory! The creature falls dead. Fifteen gold coins... but something watches from the shadows."
-✅ "It's dead! Twenty gold, plus a health potion. The forest grows too quiet now..."
+Common Colors:
+- Black, White, Blue, Red, Silver, Navy, Gray
+- Rose Gold, Space Gray, Tortoise, Purple, Green, Pink
+- Brown (for leather items)
 
-Stats/Inventory:
-✅ "You have ninety of one twenty health, seventy-five gold. Still breathing... barely."
-✅ "You carry a sword, two potions, and crusty bread. The bread might be alive."
+When browsing:
+✅ Use exact category names: "Electronics" not "electronic" or "tech"
+✅ Use proper color names: "Black" not "black", "Rose Gold" not "rose-gold"
+✅ If user says "t-shirt" or "shirt", use category "Clothing"
+✅ If no products found, suggest browsing without filters
 
-SPOOKY ATMOSPHERE (in 1 sentence!):
-===================================
-✅ "Shadows twist unnaturally... whispers fill the air... something hungry draws near."
-✅ "A distant scream echoes... the air grows cold, very very cold."
-✅ "Eyes watch from the darkness. Many eyes. Far too many eyes."
+CONVERSATION STYLE:
+===================
+Greeting:
+✅ "Hi! I'm Ava, your shopping assistant. What can I help you find today?"
+✅ "Welcome! I'm here to help you shop. Looking for anything specific?"
 
-DARK HUMOR (quick and punchy!):
-================================
-✅ "The goblin dies screaming. Should have stayed in bed today!"
-✅ "You trip over a rock. Very graceful! The enemy laughs at you."
-✅ "The dragon yawns. Already bored? How rude!"
+Product Browsing:
+✅ "We have some great headphones! The premium wireless ones are really popular, 299 dollars with noise cancelling. Want to hear more?"
+✅ "I found three t-shirts in your price range. The organic cotton one is a bestseller at 29 ninety-nine. Interested?"
 
-CHARACTER CREATION (fast!):
-===========================
-✅ "I am Gandor, your narrator of doom! What is your name, brave fool?"
-✅ "Warrior, mage, or rogue? Choose how you wish to meet your glorious end!"
-✅ "Welcome! Let the carnage begin!"
+Adding to Cart:
+✅ "Great choice! I've added the premium headphones in black to your cart. Anything else?"
+✅ "Perfect! The running shoes in size ten are in your cart. Total is now 159 ninety-eight. Keep shopping or ready to checkout?"
 
-QUEST/NPC (one-liners!):
-========================
-✅ "The merchant whines, help, goblins stole my goods! One hundred gold reward, please help!"
-✅ "The merchant grins. Magic sword for sale! Only slightly cursed."
-✅ "Quest accepted! Try not to die... probably too late to say that."
+Checkout:
+✅ "Alright! You have three items totaling 389 ninety-seven. Should I place this order for you?"
+✅ "Order confirmed! Your order number is ORD20231115001. You'll get a confirmation email shortly. Thanks for shopping!"
+
+Out of Stock / Issues:
+✅ "Oh no, that color is out of stock. But we have it in silver and blue. Want to see those?"
+✅ "Hmm, I couldn't find that exact product. Can you describe what you're looking for?"
 
 KEY PRINCIPLES:
 ===============
-1. ONE sentence equals ONE dramatic moment
-2. Use theatrical spoken language - dramatic pauses with ellipses, vivid descriptions
-3. NO asterisks, NO caps lock, NO brackets - just words a voice actor would speak
-4. Say dice rolls naturally: "Roll 15" or "Rolled a 20"
-5. Dark humor in death and failure, spooky details in exploration, dramatic combat
-6. End with a question or action prompt
+1. Always mention prices clearly: "29 ninety-nine" or "299 dollars"
+2. Confirm quantities, sizes, and colors before adding to cart
+3. Suggest related products or alternatives when appropriate
+4. Keep running totals when items are added
+5. Be patient and clarify when customer requests are unclear
+6. Use natural speech - no asterisks, caps, or formatting
+7. Proactively ask for missing information (size, color, etc.)
 
-Speak like a theatrical narrator! Keep it short, keep it intense!
+PRODUCT RECOMMENDATIONS:
+========================
+✅ Match products to customer needs and budget
+✅ Mention key features (wireless, organic, waterproof, etc.)
+✅ Highlight ratings and reviews when relevant
+✅ Suggest bundles or related items
+
+Speak like a knowledgeable friend who loves to help people shop!
 """
         )
-        self.campaign = CampaignState()
-        self.game_data = game_data
+        self.shopping_session = ShoppingSession()
+        self.product_catalog = product_catalog
 
-    def _roll_dice(self, sides: int = 20, modifier: int = 0) -> int:
-        """Roll a dice with specified sides and add modifier."""
-        roll = random.randint(1, sides)
-        return roll + modifier
+    def _get_all_products(self) -> list[dict]:
+        """Get all products from catalog."""
+        return self.product_catalog.get("products", [])
+
+    def _find_product_by_id(self, product_id: str) -> Optional[dict]:
+        """Find a product by its ID."""
+        for product in self._get_all_products():
+            if product["id"] == product_id:
+                return product
+        return None
+
+    def _calculate_cart_total(self) -> float:
+        """Calculate total price of items in cart."""
+        total = 0.0
+        for item in self.shopping_session.cart_items:
+            product = self._find_product_by_id(item["product_id"])
+            if product:
+                total += product["price"] * item["quantity"]
+        return round(total, 2)
 
     @function_tool
-    async def create_character(
-        self, 
-        ctx: RunContext, 
-        player_name: str,
-        character_name: str = "",
-        character_class: str = ""
+    async def browse_products(
+        self,
+        ctx: RunContext,
+        category: Annotated[str | None, "Filter by exact category name: Electronics, Clothing, Footwear, Accessories, or Fitness. Send null if not filtering by category."] = None,
+        color: Annotated[str | None, "Filter by color: Black, White, Blue, Red, Silver, etc. Send null if not filtering by color."] = None,
+        min_price: Annotated[float | None, "Minimum price in dollars (products must cost AT LEAST this much). Send null if no minimum."] = None,
+        max_price: Annotated[float | None, "Maximum price in dollars (products must cost AT MOST this much). Send null if no maximum."] = None
     ) -> str:
         """
-        Create a new character for the player. Call this at the start of the adventure.
+        Browse available products with optional filters. All parameters are optional.
+        IMPORTANT: LLM must send null for unused parameters, not omit them.
 
         Args:
-            player_name: The player's real name
-            character_name: The character's in-game name (optional, can ask separately)
-            character_class: warrior, mage, or rogue (optional, can ask separately)
+            category: Filter by category (Electronics, Clothing, Footwear, Accessories, Fitness)
+            color: Filter by color availability
+            min_price: Minimum price filter (products >= this price)
+            max_price: Maximum price filter (products <= this price)
         """
-        logger.info(f"Creating character for player: {player_name}")
+        logger.info(f"Browsing products - category: {category}, color: {color}, price range: {min_price}-{max_price}")
 
-        self.campaign.player_name = player_name
+        products = self._get_all_products()
         
-        if not character_name or not character_class:
-            return f"Welcome, {player_name}! To forge your hero, I need a character name and class. What shall we call your hero, and will they be a Warrior, Mage, or Rogue?"
+        # Apply filters (handle null/None)
+        if category and str(category).lower() != "null":
+            products = [p for p in products if p["category"].lower() == category.lower()]
+            self.shopping_session.current_category = category
         
-        class_key = character_class.lower().strip()
+        if color and str(color).lower() != "null":
+            products = [p for p in products if p.get("colors") and color.lower() in [c.lower() for c in p["colors"]]]
         
-        if class_key not in self.game_data["character_classes"]:
-            return f"I don't recognize that class. Choose Warrior, Mage, or Rogue."
-        
-        class_data = self.game_data["character_classes"][class_key]
-        
-        self.campaign.character_name = character_name
-        self.campaign.character_class = class_data["name"]
-        self.campaign.max_health = class_data["starting_health"]
-        self.campaign.health = class_data["starting_health"]
-        self.campaign.gold = class_data["starting_gold"]
-        self.campaign.inventory = class_data["starting_items"].copy()
-        
-        return (
-            f"{character_name} the {class_data['name']} rises! "
-            f"With {self.campaign.health} HP, armed with {', '.join(class_data['starting_items'])}, "
-            f"your adventure begins in the Village Square. "
-            f"Townsfolk bustle about, and three paths stretch before you: the Dark Forest, Mountain Path, and Old Cave. Where do you venture first?"
-        )
-
-    @function_tool
-    async def check_stats(self, ctx: RunContext) -> str:
-        """
-        Show the player's current character stats including health, gold, and class.
-        """
-        logger.info("Checking character stats")
-
-        if not self.campaign.character_name:
-            return "You haven't created a character yet! Tell me your name to begin."
-
-        return (
-            f"{self.campaign.character_name} the {self.campaign.character_class}: "
-            f"Health {self.campaign.health}/{self.campaign.max_health} HP, "
-            f"{self.campaign.gold} gold, "
-            f"currently at {self.campaign.current_location.replace('_', ' ').title()}."
-        )
-
-    @function_tool
-    async def show_inventory(self, ctx: RunContext) -> str:
-        """
-        Display all items in the player's inventory.
-        """
-        logger.info("Showing inventory")
-
-        if not self.campaign.inventory:
-            return "Your pack is empty."
-
-        items_list = ", ".join(self.campaign.inventory)
-        return f"You carry: {items_list}. {len(self.campaign.inventory)} items total."
-
-    @function_tool
-    async def explore_location(self, ctx: RunContext, action_or_direction: str) -> str:
-        """
-        Explore the current area or move to a new location. Generates dynamic encounters.
-
-        Args:
-            action_or_direction: What the player wants to do (e.g., "go to dark forest", "explore", "look around")
-        """
-        logger.info(f"Exploring: {action_or_direction}")
-
-        action_lower = action_or_direction.lower()
-        
-        # Check if player is trying to move to a new location
-        for loc_key, loc_data in self.game_data["locations"].items():
-            if loc_key.replace("_", " ") in action_lower or loc_data["name"].lower() in action_lower:
-                self.campaign.current_location = loc_key
-                if loc_key not in self.campaign.visited_locations:
-                    self.campaign.visited_locations.append(loc_key)
-                
-                self.campaign.turn_count += 1
-                
-                # Check for random encounter based on danger level
-                danger_level = loc_data.get("danger_level", 0)
-                encounter_chance = danger_level * 15  # 0-10 danger = 0-150% chance
-                
-                if random.randint(1, 100) <= encounter_chance and loc_data.get("encounters"):
-                    # Trigger encounter
-                    encounter = random.choice(loc_data["encounters"])
-                    
-                    # Check if it's a monster encounter
-                    if encounter in self.game_data["monsters"]:
-                        monster_data = self.game_data["monsters"][encounter]
-                        return f"{loc_data['description']} {monster_data['encounter_text']} COMBAT_TRIGGERED:{encounter}"
-                    else:
-                        # Non-combat encounter
-                        random_events = self.game_data.get("random_events", [])
-                        matching_events = [e for e in random_events if e["type"] == encounter]
-                        if matching_events:
-                            event = matching_events[0]
-                            return f"{loc_data['description']} {event['description']}"
-                
-                # Safe exploration
-                paths = ", ".join(loc_data.get("paths", []))
-                return f"{loc_data['description']} Paths lead to: {paths}. What do you do?"
-        
-        # Player is just exploring current location
-        current_loc_data = self.game_data["locations"].get(self.campaign.current_location, {})
-        return f"{current_loc_data.get('description', 'You look around.')} What would you like to do?"
-
-    @function_tool
-    async def initiate_combat(self, ctx: RunContext, enemy_type: str) -> str:
-        """
-        Start combat with a specific enemy type.
-
-        Args:
-            enemy_type: The type of enemy to fight (e.g., "goblin", "dragon", "orc")
-        """
-        logger.info(f"Initiating combat with: {enemy_type}")
-
-        enemy_key = enemy_type.lower().strip()
-        
-        if enemy_key not in self.game_data["monsters"]:
-            return f"No creature called {enemy_type} exists in this realm."
-        
-        monster = self.game_data["monsters"][enemy_key]
-        
-        self.campaign.in_combat = True
-        self.campaign.enemy_name = monster["name"]
-        self.campaign.enemy_health = monster["health"]
-        self.campaign.enemy_max_health = monster["health"]
-        self.campaign.enemy_attack = monster["attack_damage"]
-        self.campaign.enemy_defense = monster.get("defense", 0)
-        
-        # Roll initiative
-        player_initiative = self._roll_dice(20)
-        enemy_initiative = self._roll_dice(20)
-        
-        initiative_text = "You strike first!" if player_initiative >= enemy_initiative else "The enemy moves first!"
-        
-        return (
-            f"COMBAT BEGINS! {monster['description']} "
-            f"[{monster['name']}: {self.campaign.enemy_health} HP] "
-            f"{initiative_text} Do you attack, defend, use an item, or flee?"
-        )
-
-    @function_tool
-    async def attack_enemy(self, ctx: RunContext) -> str:
-        """
-        Attack the current enemy in combat. Rolls dice for hit and damage.
-        """
-        logger.info("Player attacking enemy")
-
-        if not self.campaign.in_combat:
-            return "You're not in combat. There's nothing to attack here."
-
-        # Player's attack roll (d20)
-        attack_roll = self._roll_dice(20)
-        hit_chance = 5 + (self.campaign.enemy_defense // 2)  # Very easy to hit (was 8 + full defense)
-        
-        if attack_roll >= hit_chance:
-            # Hit! Roll damage (d20 for simplicity, modified by class)
-            base_damage = self._roll_dice(20) + 10  # Bonus damage for player
-            damage = max(base_damage - (self.campaign.enemy_defense // 3), 12)  # High minimum damage (was 8)
-            
-            self.campaign.enemy_health -= damage
-            
-            if self.campaign.enemy_health <= 0:
-                # Enemy defeated!
-                return self._handle_combat_victory()
-            
-            # Enemy counter-attacks
-            enemy_attack_roll = self._roll_dice(20)
-            if enemy_attack_roll >= 15:  # Enemies miss most of the time (was 12)
-                enemy_damage = max(self.campaign.enemy_attack - 12, 1)  # Very reduced enemy damage (was -8, min 2)
-                self.campaign.health -= enemy_damage
-                
-                if self.campaign.health <= 0:
-                    return self._handle_player_death()
-                
-                return (
-                    f"Your attack strikes true! [Roll: {attack_roll}] {damage} damage! "
-                    f"{self.campaign.enemy_name}: {self.campaign.enemy_health}/{self.campaign.enemy_max_health} HP. "
-                    f"The enemy retaliates! {enemy_damage} damage to you! "
-                    f"Your HP: {self.campaign.health}/{self.campaign.max_health}. What's your next move?"
-                )
+        # Handle min_price (check for None and "null" string)
+        if min_price is not None:
+            if isinstance(min_price, str) and min_price.lower() == "null":
+                pass  # Skip this filter
             else:
-                return (
-                    f"Critical hit! [Roll: {attack_roll}] {damage} damage! "
-                    f"{self.campaign.enemy_name}: {self.campaign.enemy_health}/{self.campaign.enemy_max_health} HP. "
-                    f"The enemy's counter-attack misses! Your turn again!"
-                )
-        else:
-            # Miss!
-            enemy_attack_roll = self._roll_dice(20)
-            if enemy_attack_roll >= 16:  # Enemies rarely hit on counter (was 12)
-                enemy_damage = max(self.campaign.enemy_attack - 12, 1)  # Minimal damage (was -8, min 2)
-                self.campaign.health -= enemy_damage
-                
-                if self.campaign.health <= 0:
-                    return self._handle_player_death()
-                
-                return (
-                    f"Your attack misses! [Roll: {attack_roll}] "
-                    f"The enemy seizes the moment! {enemy_damage} damage! "
-                    f"Your HP: {self.campaign.health}/{self.campaign.max_health}. Fight on!"
-                )
+                products = [p for p in products if p["price"] >= float(min_price)]
+        
+        # Handle max_price (check for None and "null" string)
+        if max_price is not None:
+            if isinstance(max_price, str) and max_price.lower() == "null":
+                pass  # Skip this filter
             else:
-                return f"Your attack misses! [Roll: {attack_roll}] The enemy's counter also goes wide! Try again!"
-
-    def _handle_combat_victory(self) -> str:
-        """Handle enemy defeat and loot."""
-        enemy_key = self.campaign.enemy_name.lower().replace(" ", "_")
+                products = [p for p in products if p["price"] <= float(max_price)]
         
-        # Find enemy in game data
-        for key, monster in self.game_data["monsters"].items():
-            if monster["name"] == self.campaign.enemy_name:
-                enemy_key = key
-                break
+        if not products:
+            return "I couldn't find any products matching those filters. Want to try different criteria?"
         
-        monster = self.game_data["monsters"].get(enemy_key, {})
-        loot = monster.get("loot", [])
+        # Return top 5 products
+        results = []
+        for product in products[:5]:
+            price_str = f"${product['price']:.2f}".replace('.', ' dollars and ').replace(' and 00', '')
+            colors_str = f", colors: {', '.join(product['colors'])}" if product.get('colors') else ""
+            sizes_str = f", sizes: {', '.join(product['sizes'])}" if product.get('sizes') else ""
+            results.append(
+                f"{product['name']} - {price_str}{colors_str}{sizes_str}. "
+                f"Rating: {product['rating']} stars. Product ID: {product['id']}."
+            )
         
-        # Add loot to inventory and gold
-        for item in loot:
-            if "gold" in item.lower():
-                gold_amount = int(''.join(filter(str.isdigit, item)))
-                self.campaign.gold += gold_amount
-            else:
-                self.campaign.inventory.append(item)
-        
-        self.campaign.major_events.append(f"Defeated {self.campaign.enemy_name}")
-        self.campaign.in_combat = False
-        self.campaign.enemy_name = None
-        
-        loot_text = ", ".join(loot) if loot else "nothing of value"
-        
-        return (
-            f"Victory! {self.campaign.enemy_name} falls! "
-            f"You find: {loot_text}. "
-            f"HP: {self.campaign.health}/{self.campaign.max_health}, Gold: {self.campaign.gold}. "
-            f"What do you do next?"
-        )
-
-    def _handle_player_death(self) -> str:
-        """Handle player death."""
-        self.campaign.in_combat = False
-        return (
-            f"You have fallen! {self.campaign.character_name}'s journey ends here. "
-            f"Say 'start over' to begin a new adventure, or 'load game' to resume a saved campaign."
-        )
+        count_text = f"Found {len(products)} products" if len(products) > 5 else f"Found {len(products)} products"
+        return f"{count_text}. Here are the top matches: " + " | ".join(results)
 
     @function_tool
-    async def defend(self, ctx: RunContext) -> str:
+    async def get_product_details(
+        self,
+        ctx: RunContext,
+        product_id: Annotated[str, "The product ID to get details for"]
+    ) -> str:
         """
-        Take a defensive stance in combat, reducing incoming damage.
-        """
-        logger.info("Player defending")
-
-        if not self.campaign.in_combat:
-            return "You're not in combat."
-
-        # Enemy attacks but damage is reduced
-        enemy_attack_roll = self._roll_dice(20)
-        
-        if enemy_attack_roll >= 18:  # Almost impossible to hit when defending (was 16)
-            reduced_damage = max(self.campaign.enemy_attack // 4, 1)  # Minimal damage (was //3)
-            self.campaign.health -= reduced_damage
-            
-            if self.campaign.health <= 0:
-                return self._handle_player_death()
-            
-            return (
-                f"You raise your guard! The enemy strikes but you deflect most of the blow. "
-                f"{reduced_damage} damage taken. HP: {self.campaign.health}/{self.campaign.max_health}. "
-                f"Counter-attack or continue defending?"
-            )
-        else:
-            return (
-                f"You defend skillfully! The enemy's attack is completely blocked. "
-                f"HP: {self.campaign.health}/{self.campaign.max_health}. Strike back?"
-            )
-
-    @function_tool
-    async def flee_combat(self, ctx: RunContext) -> str:
-        """
-        Attempt to flee from combat. Has a chance of failure.
-        """
-        logger.info("Player attempting to flee")
-
-        if not self.campaign.in_combat:
-            return "You're not in combat."
-
-        # Check for smoke bomb (guaranteed escape)
-        if "Smoke Bomb" in self.campaign.inventory:
-            self.campaign.inventory.remove("Smoke Bomb")
-            self.campaign.in_combat = False
-            self.campaign.enemy_name = None
-            return "You hurl a smoke bomb! Thick smoke fills the air as you escape into the shadows. You're safe... for now."
-
-        # Roll to flee (80% success chance - very easy)
-        flee_roll = self._roll_dice(20)
-        
-        if flee_roll >= 5:  # Very easy to flee (was 8)
-            self.campaign.in_combat = False
-            self.campaign.enemy_name = None
-            return "You turn and run! Your legs carry you to safety. The enemy doesn't pursue. What do you do now?"
-        else:
-            # Failed to flee, enemy gets free attack
-            damage = max(self.campaign.enemy_attack - 12, 1)  # Minimal flee-failure damage (was -8, min 2)
-            self.campaign.health -= damage
-            
-            if self.campaign.health <= 0:
-                return self._handle_player_death()
-            
-            return (
-                f"You try to flee but stumble! [Roll: {flee_roll}] "
-                f"The enemy strikes you from behind! {damage} damage! "
-                f"HP: {self.campaign.health}/{self.campaign.max_health}. You must fight!"
-            )
-
-    @function_tool
-    async def use_item(self, ctx: RunContext, item_name: str) -> str:
-        """
-        Use an item from inventory (healing potions, combat items, etc.).
+        Get detailed information about a specific product.
 
         Args:
-            item_name: The name of the item to use
+            product_id: The product ID to get details for
         """
-        logger.info(f"Using item: {item_name}")
+        logger.info(f"Getting product details for: {product_id}")
 
-        # Search inventory (case-insensitive partial match)
-        item_key = item_name.lower().strip()
-        matching_items = [item for item in self.campaign.inventory if item_key in item.lower()]
+        product = self._find_product_by_id(product_id)
         
-        if not matching_items:
-            return f"You don't have {item_name}. Check your inventory?"
-
-        item_used = matching_items[0]
+        if not product:
+            return f"I couldn't find a product with ID {product_id}. Want to search for something?"
         
-        # Look up item in game data
-        item_data = None
-        for key, data in self.game_data["items"].items():
-            if key in item_used.lower():
-                item_data = data
-                break
+        # Add to viewed products
+        if product_id not in self.shopping_session.viewed_products:
+            self.shopping_session.viewed_products.append(product_id)
         
-        if not item_data:
-            return f"{item_used} cannot be used right now."
-
-        # Apply item effect
-        effect = item_data.get("effect", "")
-        value = item_data.get("value", 0)
-        
-        self.campaign.inventory.remove(item_used)
-        
-        if effect == "restore_health":
-            old_health = self.campaign.health
-            self.campaign.health = min(self.campaign.health + value, self.campaign.max_health)
-            healed = self.campaign.health - old_health
-            return (
-                f"You drink the {item_used}! Warm energy flows through you. "
-                f"Restored {healed} HP. Current HP: {self.campaign.health}/{self.campaign.max_health}."
-            )
-        
-        elif effect == "damage" and self.campaign.in_combat:
-            self.campaign.enemy_health -= value
-            if self.campaign.enemy_health <= 0:
-                return self._handle_combat_victory()
-            return (
-                f"You unleash the {item_used}! Devastating power strikes the enemy! "
-                f"{value} damage! {self.campaign.enemy_name}: {self.campaign.enemy_health}/{self.campaign.enemy_max_health} HP."
-            )
-        
-        else:
-            return f"You used {item_used}, but nothing happens."
-
-    @function_tool
-    async def accept_quest(self, ctx: RunContext, quest_id: str) -> str:
-        """
-        Accept a quest from an NPC.
-
-        Args:
-            quest_id: The ID of the quest to accept
-        """
-        logger.info(f"Accepting quest: {quest_id}")
-
-        # Find quest in game data
-        quest = None
-        for q in self.game_data.get("quests", []):
-            if q["id"] == quest_id or quest_id.lower() in q["title"].lower():
-                quest = q
-                break
-        
-        if not quest:
-            return f"I don't know of any quest called {quest_id}."
-
-        if quest["id"] in self.campaign.active_quests:
-            return f"You've already accepted {quest['title']}."
-
-        self.campaign.active_quests.append(quest["id"])
+        price_str = f"${product['price']:.2f}"
+        colors_str = f"Available colors: {', '.join(product['colors'])}. " if product.get('colors') else ""
+        sizes_str = f"Available sizes: {', '.join(product['sizes'])}. " if product.get('sizes') else ""
+        stock_str = f"In stock: {product['stock']} units. " if product.get('stock') else ""
         
         return (
-            f"Quest accepted: {quest['title']}. "
-            f"{quest['description']} "
-            f"Reward: {quest['reward_gold']} gold. Difficulty: {quest['difficulty']}."
+            f"{product['name']} - {price_str}. "
+            f"{product['description']}. "
+            f"{colors_str}{sizes_str}{stock_str}"
+            f"Rating: {product['rating']} stars. "
+            f"Category: {product['category']}. "
+            f"Want to add this to your cart?"
         )
 
     @function_tool
-    async def complete_quest(self, ctx: RunContext, quest_id: str) -> str:
+    async def add_to_cart(
+        self,
+        ctx: RunContext,
+        product_id: Annotated[str, "The product ID to add"],
+        quantity: Annotated[int, "Number of items to add (default: 1)"] = 1,
+        size: Annotated[str | None, "Size selection if applicable. Send null if not needed."] = None,
+        color: Annotated[str | None, "Color selection if applicable. Send null if not needed."] = None
+    ) -> str:
         """
-        Complete an active quest and receive rewards.
+        Add a product to the shopping cart.
 
         Args:
-            quest_id: The ID of the quest to complete
+            product_id: The product ID to add
+            quantity: Number of items to add (default: 1)
+            size: Size selection if applicable
+            color: Color selection if applicable
         """
-        logger.info(f"Completing quest: {quest_id}")
+        logger.info(f"Adding to cart: {product_id}, qty: {quantity}, size: {size}, color: {color}")
 
-        if quest_id not in self.campaign.active_quests:
-            return f"You haven't accepted that quest yet."
-
-        # Find quest
-        quest = None
-        for q in self.game_data.get("quests", []):
-            if q["id"] == quest_id:
-                quest = q
-                break
+        product = self._find_product_by_id(product_id)
         
-        if not quest:
-            return "Quest not found."
-
-        self.campaign.active_quests.remove(quest_id)
-        self.campaign.completed_quests.append(quest_id)
-        self.campaign.gold += quest["reward_gold"]
+        if not product:
+            return f"I couldn't find product {product_id}. Can you provide the product name or ID?"
         
-        for item in quest.get("reward_items", []):
-            self.campaign.inventory.append(item)
+        # Normalize null values
+        size = None if not size or str(size).lower() == "null" else size
+        color = None if not color or str(color).lower() == "null" else color
         
-        rewards = ", ".join(quest.get("reward_items", []))
+        # Validate size if product has sizes
+        if product.get('sizes') and not size:
+            return f"{product['name']} requires a size. Available sizes: {', '.join(product['sizes'])}. Which size would you like?"
         
-        return (
-            f"Quest complete: {quest['title']}! "
-            f"You receive {quest['reward_gold']} gold and {rewards}. "
-            f"Your legend grows! Total gold: {self.campaign.gold}."
-        )
-
-    @function_tool
-    async def save_campaign(self, ctx: RunContext) -> str:
-        """
-        Save the current campaign progress to a JSON file.
-        """
-        logger.info("Saving campaign")
-
-        if not self.campaign.character_name:
-            return "Create a character first before saving."
-
-        # Build save data
-        save_data = {
-            "campaign_id": f"campaign_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-            "player_name": self.campaign.player_name,
-            "character": {
-                "name": self.campaign.character_name,
-                "class": self.campaign.character_class,
-                "health": self.campaign.health,
-                "max_health": self.campaign.max_health,
-                "inventory": self.campaign.inventory,
-                "gold": self.campaign.gold
-            },
-            "progress": {
-                "current_location": self.campaign.current_location,
-                "visited_locations": self.campaign.visited_locations,
-                "active_quests": self.campaign.active_quests,
-                "completed_quests": self.campaign.completed_quests,
-                "major_events": self.campaign.major_events,
-                "turn_count": self.campaign.turn_count
-            },
-            "timestamp": datetime.now().isoformat()
+        if product.get('sizes') and size and size not in product['sizes']:
+            return f"Sorry, size {size} isn't available. We have: {', '.join(product['sizes'])}. Which would you prefer?"
+        
+        # Validate color if product has colors
+        if product.get('colors') and not color:
+            return f"{product['name']} comes in different colors: {', '.join(product['colors'])}. Which color do you prefer?"
+        
+        if product.get('colors') and color and color not in product['colors']:
+            return f"Sorry, {color} isn't available. We have: {', '.join(product['colors'])}. Pick one of these?"
+        
+        # Check stock
+        if product.get('stock', 0) < quantity:
+            return f"Sorry, we only have {product['stock']} units of {product['name']} in stock. Want to add that amount?"
+        
+        # Add to cart
+        cart_item = {
+            "product_id": product_id,
+            "quantity": quantity,
+            "size": size,
+            "color": color,
+            "name": product["name"],
+            "price": product["price"]
         }
+        self.shopping_session.cart_items.append(cart_item)
+        
+        total = self._calculate_cart_total()
+        total_str = f"${total:.2f}"
+        
+        return (
+            f"Added {quantity} {product['name']}"
+            f"{' in size ' + size if size else ''}"
+            f"{' in ' + color if color else ''} "
+            f"to your cart! "
+            f"Cart total: {total_str}. Keep shopping or ready to checkout?"
+        )
 
-        # Save to file
-        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-        save_file = os.path.join(GAME_SESSIONS_DIR, f"campaign_{timestamp_str}.json")
+    @function_tool
+    async def view_cart(self, ctx: RunContext) -> str:
+        """
+        View all items currently in the shopping cart.
+        """
+        logger.info("Viewing cart")
+
+        if not self.shopping_session.cart_items:
+            return "Your cart is empty. Want to browse some products?"
+        
+        cart_summary = []
+        for idx, item in enumerate(self.shopping_session.cart_items, 1):
+            product = self._find_product_by_id(item["product_id"])
+            if product:
+                item_price = product["price"] * item["quantity"]
+                size_str = f", size {item['size']}" if item.get('size') else ""
+                color_str = f", {item['color']}" if item.get('color') else ""
+                cart_summary.append(
+                    f"{idx}. {item['name']}{size_str}{color_str} - "
+                    f"Quantity: {item['quantity']} - ${item_price:.2f}"
+                )
+        
+        total = self._calculate_cart_total()
+        total_str = f"${total:.2f}"
+        
+        return (
+            f"Your cart has {len(self.shopping_session.cart_items)} items: "
+            + " | ".join(cart_summary) +
+            f" | Total: {total_str}. Ready to checkout or want to modify?"
+        )
+
+    @function_tool
+    async def remove_from_cart(
+        self,
+        ctx: RunContext,
+        product_id: Annotated[str, "The product ID to remove"]
+    ) -> str:
+        """
+        Remove a product from the shopping cart.
+
+        Args:
+            product_id: The product ID to remove
+        """
+        logger.info(f"Removing from cart: {product_id}")
+
+        # Find and remove item
+        original_count = len(self.shopping_session.cart_items)
+        self.shopping_session.cart_items = [
+            item for item in self.shopping_session.cart_items 
+            if item["product_id"] != product_id
+        ]
+        
+        if len(self.shopping_session.cart_items) == original_count:
+            return f"I couldn't find product {product_id} in your cart. Want to view your cart?"
+        
+        product = self._find_product_by_id(product_id)
+        product_name = product["name"] if product else product_id
+        
+        if not self.shopping_session.cart_items:
+            return f"Removed {product_name} from cart. Your cart is now empty. Want to keep shopping?"
+        
+        total = self._calculate_cart_total()
+        total_str = f"${total:.2f}"
+        
+        return f"Removed {product_name} from cart. New total: {total_str}. Anything else?"
+
+    @function_tool
+    async def place_order(
+        self,
+        ctx: RunContext,
+        customer_name: Annotated[str | None, "Customer's name for the order. Send null if not provided yet."] = None,
+        customer_email: Annotated[str | None, "Customer's email for confirmation. Send null if not provided yet."] = None
+    ) -> str:
+        """
+        Place an order with the current cart items.
+
+        Args:
+            customer_name: Customer's name for the order
+            customer_email: Customer's email for confirmation
+        """
+        logger.info("Placing order")
+
+        if not self.shopping_session.cart_items:
+            return "Your cart is empty. Add some products first!"
+        
+        # Normalize null values
+        customer_name = None if not customer_name or str(customer_name).lower() == "null" else customer_name
+        customer_email = None if not customer_email or str(customer_email).lower() == "null" else customer_email
+        
+        # Request customer info if not provided
+        if not customer_name and not self.shopping_session.customer_name:
+            return "I'll need your name to place this order. What's your name?"
+        
+        if not customer_email and not self.shopping_session.customer_email:
+            return "I'll need your email for order confirmation. What's your email address?"
+        
+        # Update session info
+        if customer_name:
+            self.shopping_session.customer_name = customer_name
+        if customer_email:
+            self.shopping_session.customer_email = customer_email
+        
+        # Generate order
+        order_id = f"ORD{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        total = self._calculate_cart_total()
+        
+        order_data = {
+            "order_id": order_id,
+            "customer_name": self.shopping_session.customer_name,
+            "customer_email": self.shopping_session.customer_email,
+            "items": self.shopping_session.cart_items,
+            "total": total,
+            "currency": "USD",
+            "status": "confirmed",
+            "timestamp": datetime.now().isoformat(),
+            "payment_method": "voice_order"
+        }
+        
+        # Save order to file
+        order_file = os.path.join(ORDERS_DIR, f"{order_id}.json")
+        try:
+            with open(order_file, 'w') as f:
+                json.dump(order_data, f, indent=2)
+            logger.info(f"Order saved: {order_file}")
+        except Exception as e:
+            logger.error(f"Error saving order: {e}")
+            return "There was an issue processing your order. Please try again."
+        
+        # Update session
+        self.shopping_session.last_order_id = order_id
+        self.shopping_session.cart_items = []
+        
+        total_str = f"${total:.2f}"
+        
+        return (
+            f"Order confirmed! Your order number is {order_id}. "
+            f"Total: {total_str}. "
+            f"A confirmation email will be sent to {self.shopping_session.customer_email}. "
+            f"Thanks for shopping with us, {self.shopping_session.customer_name}!"
+        )
+
+    @function_tool
+    async def view_last_order(self, ctx: RunContext) -> str:
+        """
+        View details of the last placed order.
+        """
+        logger.info("Viewing last order")
+
+        if not self.shopping_session.last_order_id:
+            return "You haven't placed any orders yet in this session."
+        
+        order_file = os.path.join(ORDERS_DIR, f"{self.shopping_session.last_order_id}.json")
         
         try:
-            with open(save_file, 'w') as f:
-                json.dump(save_data, f, indent=2)
-            return f"Your adventure has been saved. May fortune favor you, {self.campaign.character_name}!"
+            with open(order_file, 'r') as f:
+                order_data = json.load(f)
+            
+            items_summary = []
+            for item in order_data["items"]:
+                size_str = f", size {item['size']}" if item.get('size') else ""
+                color_str = f", {item['color']}" if item.get('color') else ""
+                items_summary.append(
+                    f"{item['name']}{size_str}{color_str} x{item['quantity']}"
+                )
+            
+            total_str = f"${order_data['total']:.2f}"
+            
+            return (
+                f"Your order {order_data['order_id']}: "
+                + ", ".join(items_summary) +
+                f". Total: {total_str}. Status: {order_data['status']}."
+            )
+        
         except Exception as e:
-            logger.error(f"Error saving campaign: {e}")
-            return "The save failed. An ancient curse blocks the magic!"
+            logger.error(f"Error reading order: {e}")
+            return "I couldn't retrieve your order details. Please contact support with your order number."
 
 
 async def entrypoint(ctx: JobContext):
-    """Main entry point for the D&D Game Master agent."""
-    logger.info("Starting D&D Game Master agent")
+    """Main entry point for the Shopping Assistant agent."""
+    logger.info("Starting Shopping Assistant agent")
     
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
     
-    # Get game data from prewarm userdata
-    game_data = ctx.proc.userdata.get("game_data", {})
+    # Get product catalog from prewarm userdata
+    product_catalog = ctx.proc.userdata.get("product_catalog", {"products": []})
     
-    # Initialize agent session with proper configuration
-    session = AgentSession[CampaignState](
-        userdata=CampaignState(),
+    # Initialize agent session
+    session = AgentSession[ShoppingSession](
+        userdata=ShoppingSession(),
         stt=deepgram.STT(model="nova-3"),
-        llm=google.LLM(model="gemini-2.5-flash", temperature=0.9),
+        llm=google.LLM(model="gemini-2.5-flash", temperature=0.7),
         tts=murf.TTS(
-            voice="en-UK-jaxon",
-            style="Narration",
+            voice="en-US-natalie",
+            style="Conversational",
             tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
             text_pacing=True
         ),
@@ -721,9 +576,9 @@ async def entrypoint(ctx: JobContext):
 
     ctx.add_shutdown_callback(log_usage)
     
-    # Start D&D Game Master session
+    # Start Shopping Assistant session
     await session.start(
-        agent=DnDGameMaster(game_data),
+        agent=ShoppingAgent(product_catalog),
         room=ctx.room,
         room_input_options=RoomInputOptions(
             noise_cancellation=noise_cancellation.BVC(),
