@@ -45,6 +45,11 @@ export function useRoom(appConfig: AppConfig) {
         );
 
         try {
+          // Get player name from sessionStorage if available
+          const playerName = typeof window !== 'undefined' 
+            ? sessionStorage.getItem('improv_player_name') 
+            : null;
+
           const res = await fetch(url.toString(), {
             method: 'POST',
             headers: {
@@ -52,6 +57,7 @@ export function useRoom(appConfig: AppConfig) {
               'X-Sandbox-Id': appConfig.sandboxId ?? '',
             },
             body: JSON.stringify({
+              player_name: playerName,
               room_config: appConfig.agentName
                 ? {
                     agents: [{ agent_name: appConfig.agentName }],

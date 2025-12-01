@@ -20,9 +20,9 @@ export interface AppConfig {
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'ShopSmart',
-  pageTitle: 'ShopSmart | AI Shopping Assistant',
-  pageDescription: 'Shop smarter with voice-powered AI shopping assistant',
+  companyName: 'ImprovArena',
+  pageTitle: 'Improv Situations | Weird Scenarios Game',
+  pageDescription: 'Face bizarre scenarios and show off your creative improvisation skills',
 
   supportsChatInput: true,
   supportsVideoInput: false,
@@ -30,10 +30,10 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   isPreConnectBufferEnabled: true,
 
   logo: '/lk-logo.svg',
-  accent: '#16a34a',  // Green for e-commerce/shopping theme
+  accent: '#a855f7',  // Purple for comedy theme
   logoDark: '/lk-logo-dark.svg',
-  accentDark: '#22c55e',  // Lighter green for dark mode
-  startButtonText: '🛒 START SHOPPING',
+  accentDark: '#c084fc',  // Lighter purple for dark mode
+  startButtonText: '🎮 START GAME',
 
   // for LiveKit Cloud Sandbox
   sandboxId: undefined,

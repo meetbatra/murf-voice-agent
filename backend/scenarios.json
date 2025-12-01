@@ -1,0 +1,129 @@
+{
+  "scenarios": [
+    {
+      "id": 1,
+      "scenario": "You're a barista and the espresso machine is speaking ancient Latin",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 2,
+      "scenario": "You're a dog walker but all the dogs have started a union and are demanding better treats",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 3,
+      "scenario": "You're a librarian and the books are rearranging themselves by mood instead of alphabetically",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 4,
+      "scenario": "You're a taxi driver and your GPS has become sentient and very opinionated about your life choices",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 5,
+      "scenario": "You're a dentist whose patient's teeth start singing show tunes during the cleaning",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 6,
+      "scenario": "You're a florist and all your flowers have started gossiping about customers",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 7,
+      "scenario": "You're a time-travelling tour guide explaining modern smartphones to someone from the 1800s",
+      "category": "time_travel"
+    },
+    {
+      "id": 8,
+      "scenario": "You're a museum guide but all the paintings are commenting on the visitors walking by",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 9,
+      "scenario": "You're a chef and your ingredients are arguing about who gets cooked first",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 10,
+      "scenario": "You're a yoga instructor and your mat has developed consciousness and keeps critiquing your poses",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 11,
+      "scenario": "You're a weatherperson and the clouds are personally offended by your forecasts",
+      "category": "nature_absurd"
+    },
+    {
+      "id": 12,
+      "scenario": "You're a pet store employee when all the fish start speaking French and demanding gourmet food",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 13,
+      "scenario": "You're a parking attendant and the cars are forming a support group about their owners",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 14,
+      "scenario": "You're a piano teacher but your piano only plays in memes and internet references",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 15,
+      "scenario": "You're a lifeguard at a pool where the water has become philosophical and won't let anyone swim",
+      "category": "nature_absurd"
+    },
+    {
+      "id": 16,
+      "scenario": "You're a mailperson and the letters are reading themselves out loud and revealing everyone's secrets",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 17,
+      "scenario": "You're a cashier and the cash register is trying to convince you to quit your job and follow your dreams",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 18,
+      "scenario": "You're a photographer and your camera only takes photos of what people are thinking, not what they look like",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 19,
+      "scenario": "You're a DJ but your turntables have become music snobs and refuse to play anything mainstream",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 20,
+      "scenario": "You're a hairstylist and the scissors are giving relationship advice to all your clients",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 21,
+      "scenario": "You're a zookeeper and all the animals have switched personalities with each other",
+      "category": "animal_absurd"
+    },
+    {
+      "id": 22,
+      "scenario": "You're a tech support agent and the computer virus is actually calling in for help about its own problems",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 23,
+      "scenario": "You're a gardener and your plants are staging a protest about the type of fertilizer you're using",
+      "category": "nature_absurd"
+    },
+    {
+      "id": 24,
+      "scenario": "You're a flight attendant and the airplane's autopilot has decided it wants to become a cruise ship",
+      "category": "workplace_absurd"
+    },
+    {
+      "id": 25,
+      "scenario": "You're a gym trainer and all the dumbbells are motivational speakers who won't stop talking",
+      "category": "workplace_absurd"
+    }
+  ]
+}
