@@ -153,13 +153,13 @@ export const SessionView = ({
         initial={{ opacity: 0, x: 100 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5, delay: 0.8 }}
-        className="hidden lg:flex flex-col w-80 xl:w-96 h-screen border-l border-green-500/30 bg-card/50 backdrop-blur-sm"
+        className="hidden lg:flex flex-col w-80 xl:w-96 h-screen border-l border-purple-500/30 bg-card/50 backdrop-blur-sm"
       >
         {/* Header */}
-        <div className="p-4 border-b border-green-500/20 bg-linear-to-b from-green-950/30 to-transparent">
+        <div className="p-4 border-b border-purple-500/20 bg-linear-to-b from-purple-950/30 to-transparent">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            <h3 className="text-sm font-bold text-green-600 uppercase tracking-wider">Live Transcript</h3>
+            <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
+            <h3 className="text-sm font-bold text-purple-600 uppercase tracking-wider">Live Transcript</h3>
           </div>
           <p className="text-xs text-muted-foreground mt-1">Real-time conversation</p>
         </div>
@@ -169,11 +169,11 @@ export const SessionView = ({
           <div className="space-y-3">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                <div className="w-12 h-12 rounded-full bg-green-600/20 flex items-center justify-center mb-3">
-                  <span className="text-2xl">🛒</span>
+                <div className="w-12 h-12 rounded-full bg-purple-600/20 flex items-center justify-center mb-3">
+                  <span className="text-2xl">🎭</span>
                 </div>
                 <p className="text-sm text-muted-foreground">No messages yet</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">Start shopping!</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">Start the battle!</p>
               </div>
             ) : (
               messages.map(({ id, timestamp, from, message }) => {
@@ -184,18 +184,18 @@ export const SessionView = ({
                     className={cn(
                       'p-3 rounded-lg text-sm',
                       isUser
-                        ? 'bg-green-600/20 border border-green-500/30 ml-4'
-                        : 'bg-card border border-green-500/20 mr-4'
+                        ? 'bg-purple-600/20 border border-purple-500/30 ml-4'
+                        : 'bg-card border border-purple-500/20 mr-4'
                     )}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span
                         className={cn(
                           'text-xs font-semibold',
-                          isUser ? 'text-green-400' : 'text-green-600'
+                          isUser ? 'text-purple-400' : 'text-purple-600'
                         )}
                       >
-                        {isUser ? 'You' : 'Ava'}
+                        {isUser ? 'You' : 'Host'}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {new Date(timestamp).toLocaleTimeString()}
@@ -210,11 +210,11 @@ export const SessionView = ({
         </ScrollArea>
 
         {/* Footer */}
-        <div className="p-3 border-t border-green-500/20 bg-linear-to-t from-green-950/30 to-transparent">
+        <div className="p-3 border-t border-purple-500/20 bg-linear-to-t from-purple-950/30 to-transparent">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{messages.length} messages</span>
             <span className="flex items-center gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
               Live
             </span>
           </div>
